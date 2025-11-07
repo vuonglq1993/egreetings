@@ -11,13 +11,9 @@ namespace server.Repositories
         );
 
         Task<T?> GetByIdAsync(int id, string? includeProperties = null);
-
         Task<T> AddAsync(T entity);
-
         Task UpdateAsync(T entity);
-
         Task DeleteAsync(int id);
-
         Task<bool> ExistsAsync(Expression<Func<T, bool>> predicate);
     }
 }

@@ -2,21 +2,20 @@ using System.Linq.Expressions;
 
 namespace server.Services
 {
-    public interface IBaseService<TDto>
+    public interface IBaseService<T> where T : class
     {
-        Task<IEnumerable<TDto>> GetAllAsync(
+        Task<IEnumerable<T>> GetAllAsync();
+        Task<T?> GetByIdAsync(int id);
+        Task<T> CreateAsync(T entity);
+        Task UpdateAsync(int id, T entity);
+        Task DeleteAsync(int id);
+        Task<IEnumerable<T>> SearchAsync(string keyword, params Expression<Func<T, string>>[] searchFields);
+        Task<(IEnumerable<T> Items, int TotalCount)> SearchAsync(
             string? search = null,
             string? sortBy = null,
             bool isDescending = false,
-            Expression<Func<TDto, bool>>? filter = null
-        );
-
-        Task<TDto?> GetByIdAsync(int id);
-
-        Task<TDto> CreateAsync(TDto dto);
-
-        Task UpdateAsync(int id, TDto dto);
-
-        Task DeleteAsync(int id);
+            int pageNumber = 1,
+            int pageSize = 10,
+            Expression<Func<T, bool>>? filter = null);
     }
 }

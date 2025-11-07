@@ -3,19 +3,12 @@ namespace server.DTOs
     public class FeedbackDTO
     {
         public int Id { get; set; }
-        public string? Message { get; set; }
-        public DateTime? CreatedAt { get; set; }
-        public string? UserName { get; set; }
-    }
-
-    public class CreateFeedbackDTO
-    {
         public int? UserId { get; set; }
-        public string Message { get; set; } = null!;
-    }
+        public string Message { get; set; } = string.Empty;
+        public DateTime CreatedAt { get; set; }
 
-    public class UpdateFeedbackDTO
-    {
-        public string Message { get; set; } = null!;
+        // Optional joined data
+        public string? UserName { get; set; }
+        public string? UserEmail { get; set; }
     }
 }

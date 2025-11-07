@@ -1,14 +1,14 @@
-using server.Models;
 using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
+using server.Models;
+using server.Repositories.Interfaces;
 
 namespace server.Repositories.Implementations
 {
-    public class UserRepository : BaseRepository<User>
+    public class UserRepository : BaseRepository<User>, IUserRepository
     {
         public UserRepository(EGreetingDbContext context) : base(context) { }
 
-        // Include relationships when retrieving data
         public async Task<IEnumerable<User>> GetAllWithRelationsAsync(
             Expression<Func<User, bool>>? filter = null,
             Func<IQueryable<User>, IOrderedQueryable<User>>? orderBy = null)

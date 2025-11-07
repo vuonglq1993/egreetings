@@ -1,25 +1,22 @@
 using server.Models;
-using server.Repositories.Implementations;
+using server.Repositories.Interfaces;
+using server.Services.Interfaces;
 
 namespace server.Services.Implementations
 {
-    public class UserService : BaseService<User>
+    public class UserService : BaseService<User>, IUserService
     {
-        private readonly UserRepository _userRepository;
+        private readonly IUserRepository _userRepository;
 
-        public UserService(UserRepository userRepository) : base(userRepository)
+        public UserService(IUserRepository userRepository) : base(userRepository)
         {
             _userRepository = userRepository;
         }
 
         public async Task<IEnumerable<User>> GetAllWithRelationsAsync()
-        {
-            return await _userRepository.GetAllWithRelationsAsync();
-        }
+            => await _userRepository.GetAllWithRelationsAsync();
 
         public async Task<User?> GetByIdWithRelationsAsync(int id)
-        {
-            return await _userRepository.GetByIdWithRelationsAsync(id);
-        }
+            => await _userRepository.GetByIdWithRelationsAsync(id);
     }
 }
