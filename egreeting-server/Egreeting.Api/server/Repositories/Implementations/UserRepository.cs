@@ -1,37 +1,40 @@
-using Microsoft.EntityFrameworkCore;
 using server.Models;
-using server.Repositories.Interfaces;
+using Microsoft.EntityFrameworkCore;
+using System.Linq.Expressions;
 
 namespace server.Repositories.Implementations
 {
-    public class UserRepository : BaseRepository<User>, IUserRepository
+    public class UserRepository : BaseRepository<User>
     {
         public UserRepository(EGreetingDbContext context) : base(context) { }
 
-        private EGreetingDbContext AppContext => (EGreetingDbContext)_context;
-
-        public async Task<User?> GetByEmailAsync(string email)
+        // Include relationships when retrieving data
+        public async Task<IEnumerable<User>> GetAllWithRelationsAsync(
+            Expression<Func<User, bool>>? filter = null,
+            Func<IQueryable<User>, IOrderedQueryable<User>>? orderBy = null)
         {
-            return await _dbSet.FirstOrDefaultAsync(u => u.Email == email);
+            IQueryable<User> query = _dbSet
+                .Include(u => u.Feedbacks)
+                .Include(u => u.Subscriptions)
+                .Include(u => u.Transactions);
+
+            if (filter != null)
+                query = query.Where(filter);
+
+            if (orderBy != null)
+                query = orderBy(query);
+
+            return await query.AsNoTracking().ToListAsync();
         }
 
-        public async Task<IEnumerable<User>> GetActiveUsersAsync()
+        public async Task<User?> GetByIdWithRelationsAsync(int id)
         {
-            return await _dbSet.Where(u => u.Status == true).ToListAsync();
-        }
-
-        public async Task<IEnumerable<User>> GetByRoleAsync(string role)
-        {
-            return await _dbSet.Where(u => u.Role == role).ToListAsync();
-        }
-
-        public async Task<bool> ChangeStatusAsync(int userId, bool status)
-        {
-            var user = await _dbSet.FindAsync(userId);
-            if (user == null) return false;
-
-            user.Status = status;
-            return await _context.SaveChangesAsync() > 0;
+            return await _dbSet
+                .Include(u => u.Feedbacks)
+                .Include(u => u.Subscriptions)
+                .Include(u => u.Transactions)
+                .AsNoTracking()
+                .FirstOrDefaultAsync(u => u.Id == id);
         }
     }
 }

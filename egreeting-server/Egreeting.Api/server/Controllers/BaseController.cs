@@ -1,6 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
-using Microsoft.EntityFrameworkCore;
 using System.Linq.Expressions;
+using server.Services;
 
 namespace server.Controllers
 {
@@ -8,153 +8,72 @@ namespace server.Controllers
     [Route("api/[controller]")]
     public class BaseController<T> : ControllerBase where T : class
     {
-        private readonly DbContext _context;
-        private readonly DbSet<T> _dbSet;
+        protected readonly BaseService<T> _service;
 
-        public BaseController(DbContext context)
+        public BaseController(BaseService<T> service)
         {
-            _context = context;
-            _dbSet = _context.Set<T>();
+            _service = service;
         }
 
-        // =========================================
-        // ============= BASIC CRUD ================
-        // =========================================
-
+        // ===== CRUD =====
         [HttpGet]
-        public virtual async Task<ActionResult<IEnumerable<T>>> GetAll()
-        {
-            var items = await _dbSet.ToListAsync();
-            return Ok(items);
-        }
+        public virtual async Task<IActionResult> GetAll()
+            => Ok(await _service.GetAllAsync());
 
         [HttpGet("{id}")]
-        public virtual async Task<ActionResult<T>> GetById(int id)
+        public virtual async Task<IActionResult> GetById(int id)
         {
-            var entity = await _dbSet.FindAsync(id);
-            if (entity == null)
-                return NotFound();
-            return Ok(entity);
+            var entity = await _service.GetByIdAsync(id);
+            return entity == null ? NotFound() : Ok(entity);
         }
 
         [HttpPost]
-        public virtual async Task<ActionResult<T>> Create([FromBody] T entity)
+        public virtual async Task<IActionResult> Create([FromBody] T entity)
         {
-            _dbSet.Add(entity);
-            await _context.SaveChangesAsync();
-            return CreatedAtAction(nameof(GetById), new { id = GetEntityId(entity) }, entity);
+            await _service.AddAsync(entity);
+            return Ok(entity);
         }
 
         [HttpPut("{id}")]
         public virtual async Task<IActionResult> Update(int id, [FromBody] T entity)
         {
-            var existing = await _dbSet.FindAsync(id);
-            if (existing == null)
-                return NotFound();
-
-            _context.Entry(existing).CurrentValues.SetValues(entity);
-            await _context.SaveChangesAsync();
-            return NoContent();
+            var result = await _service.UpdateAsync(entity);
+            return result ? Ok(entity) : NotFound();
         }
 
         [HttpDelete("{id}")]
         public virtual async Task<IActionResult> Delete(int id)
         {
-            var entity = await _dbSet.FindAsync(id);
-            if (entity == null)
-                return NotFound();
-
-            _dbSet.Remove(entity);
-            await _context.SaveChangesAsync();
-            return NoContent();
+            var result = await _service.DeleteAsync(id);
+            return result ? NoContent() : NotFound();
         }
 
-        // =========================================
-        // =========== ADVANCED FILTER =============
-        // =========================================
-
+        // ===== Filter (with sort + paging) =====
         [HttpGet("filter")]
-        public virtual async Task<ActionResult<IEnumerable<T>>> Filter(
-            [FromQuery] string? search = null,
-            [FromQuery] string? sortBy = null,
-            [FromQuery] bool desc = false,
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 20)
+        public virtual async Task<IActionResult> Filter(
+            [FromQuery] string? sortField,
+            [FromQuery] string? sortOrder = "asc",
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10)
         {
-            IQueryable<T> query = _dbSet.AsQueryable();
+            var result = await _service.FilterAsync(
+                predicate: null,
+                sortField: sortField,
+                sortOrder: sortOrder,
+                pageNumber: pageNumber,
+                pageSize: pageSize
+            );
 
-            // Search by any string property
-            if (!string.IsNullOrEmpty(search))
-            {
-                var parameter = Expression.Parameter(typeof(T), "x");
-                var stringProps = typeof(T).GetProperties()
-                    .Where(p => p.PropertyType == typeof(string))
-                    .ToList();
-
-                Expression? filterExpression = null;
-
-                foreach (var prop in stringProps)
-                {
-                    var propAccess = Expression.Property(parameter, prop);
-                    var searchConst = Expression.Constant(search);
-                    var containsMethod = typeof(string).GetMethod("Contains", new[] { typeof(string) })!;
-                    var containsExpr = Expression.Call(propAccess, containsMethod, searchConst);
-
-                    filterExpression = filterExpression == null
-                        ? (Expression)containsExpr
-                        : Expression.OrElse(filterExpression, containsExpr);
-                }
-
-                if (filterExpression != null)
-                {
-                    var lambda = Expression.Lambda<Func<T, bool>>(filterExpression, parameter);
-                    query = query.Where(lambda);
-                }
-            }
-
-            // Sorting
-            if (!string.IsNullOrEmpty(sortBy))
-            {
-                var property = typeof(T).GetProperty(sortBy,
-                    System.Reflection.BindingFlags.IgnoreCase |
-                    System.Reflection.BindingFlags.Public |
-                    System.Reflection.BindingFlags.Instance);
-
-                if (property != null)
-                {
-                    var parameter = Expression.Parameter(typeof(T), "x");
-                    var propertyAccess = Expression.Property(parameter, property);
-                    var orderByExpr = Expression.Lambda(propertyAccess, parameter);
-
-                    string methodName = desc ? "OrderByDescending" : "OrderBy";
-                    var resultExpr = Expression.Call(typeof(Queryable), methodName,
-                        new Type[] { typeof(T), property.PropertyType },
-                        query.Expression, Expression.Quote(orderByExpr));
-                    query = query.Provider.CreateQuery<T>(resultExpr);
-                }
-            }
-
-            // Paging
-            var total = await query.CountAsync();
-            var data = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-
-            return Ok(new
-            {
-                total,
-                page,
-                pageSize,
-                data
-            });
+            return Ok(result);
         }
 
-        // =========================================
-        // ============== HELPER ===================
-        // =========================================
-        private object? GetEntityId(T entity)
+        // ===== Search =====
+        [HttpGet("search")]
+        public virtual async Task<IActionResult> Search(
+            [FromQuery] string keyword)
         {
-            var prop = typeof(T).GetProperties()
-                .FirstOrDefault(p => p.Name.Equals("Id", StringComparison.OrdinalIgnoreCase));
-            return prop?.GetValue(entity);
+            // Override this method in derived controllers to specify fields
+            return BadRequest("Search fields not specified. Override Search() in derived controller.");
         }
     }
 }

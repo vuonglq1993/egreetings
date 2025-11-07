@@ -1,130 +1,40 @@
-using Microsoft.EntityFrameworkCore;
-using server.Services.Interfaces;
 using System.Linq.Expressions;
+using server.Repositories;
 
-namespace server.Services.Implementations
+namespace server.Services
 {
-    public class BaseService<T> : IBaseService<T> where T : class
+    public class BaseService<T> where T : class
     {
-        private readonly DbContext _context;
-        private readonly DbSet<T> _dbSet;
+        private readonly BaseRepository<T> _repository;
 
-        public BaseService(DbContext context)
+        public BaseService(BaseRepository<T> repository)
         {
-            _context = context;
-            _dbSet = _context.Set<T>();
+            _repository = repository;
         }
 
-        // ==============================
-        // ===== BASIC CRUD METHODS =====
-        // ==============================
+        // ===== CRUD =====
+        public virtual Task<IEnumerable<T>> GetAllAsync() => _repository.GetAllAsync();
+        public virtual Task<T?> GetByIdAsync(int id) => _repository.GetByIdAsync(id);
+        public virtual Task AddAsync(T entity) => _repository.AddAsync(entity);
+        public virtual Task<bool> UpdateAsync(T entity) => _repository.UpdateAsync(entity);
+        public virtual Task<bool> DeleteAsync(int id) => _repository.DeleteAsync(id);
 
-        public async Task<IEnumerable<T>> GetAllAsync()
-        {
-            return await _dbSet.AsNoTracking().ToListAsync();
-        }
+        // ===== Count =====
+        public virtual Task<int> CountAsync() => _repository.CountAsync();
 
-        public async Task<T?> GetByIdAsync(int id)
-        {
-            return await _dbSet.FindAsync(id);
-        }
+        // ===== Filter =====
+        public virtual Task<IEnumerable<T>> FilterAsync(
+            Expression<Func<T, bool>>? predicate = null,
+            string? sortField = null,
+            string? sortOrder = "asc",
+            int pageNumber = 1,
+            int pageSize = 10)
+            => _repository.FilterAsync(predicate, sortField, sortOrder, pageNumber, pageSize);
 
-        public async Task<T> CreateAsync(T entity)
-        {
-            await _dbSet.AddAsync(entity);
-            await _context.SaveChangesAsync();
-            return entity;
-        }
-
-        public async Task<bool> UpdateAsync(int id, T entity)
-        {
-            var existing = await _dbSet.FindAsync(id);
-            if (existing == null) return false;
-
-            _context.Entry(existing).CurrentValues.SetValues(entity);
-            await _context.SaveChangesAsync();
-            return true;
-        }
-
-        public async Task<bool> DeleteAsync(int id)
-        {
-            var existing = await _dbSet.FindAsync(id);
-            if (existing == null) return false;
-
-            _dbSet.Remove(existing);
-            await _context.SaveChangesAsync();
-            return true;
-        }
-
-        // ==============================
-        // ====== ADVANCED FILTER =======
-        // ==============================
-
-        public async Task<(IEnumerable<T> Data, int Total)> FilterAsync(
-            string? search = null,
-            string? sortBy = null,
-            bool desc = false,
-            int page = 1,
-            int pageSize = 20)
-        {
-            IQueryable<T> query = _dbSet.AsQueryable();
-
-            // Search by string fields
-            if (!string.IsNullOrEmpty(search))
-            {
-                var parameter = Expression.Parameter(typeof(T), "x");
-                var stringProps = typeof(T).GetProperties()
-                    .Where(p => p.PropertyType == typeof(string))
-                    .ToList();
-
-                Expression? filterExpression = null;
-
-                foreach (var prop in stringProps)
-                {
-                    var propAccess = Expression.Property(parameter, prop);
-                    var searchConst = Expression.Constant(search);
-                    var containsMethod = typeof(string).GetMethod("Contains", new[] { typeof(string) })!;
-                    var containsExpr = Expression.Call(propAccess, containsMethod, searchConst);
-
-                    filterExpression = filterExpression == null
-                        ? (Expression)containsExpr
-                        : Expression.OrElse(filterExpression, containsExpr);
-                }
-
-                if (filterExpression != null)
-                {
-                    var lambda = Expression.Lambda<Func<T, bool>>(filterExpression, parameter);
-                    query = query.Where(lambda);
-                }
-            }
-
-            // Sorting
-            if (!string.IsNullOrEmpty(sortBy))
-            {
-                var property = typeof(T).GetProperty(sortBy,
-                    System.Reflection.BindingFlags.IgnoreCase |
-                    System.Reflection.BindingFlags.Public |
-                    System.Reflection.BindingFlags.Instance);
-
-                if (property != null)
-                {
-                    var parameter = Expression.Parameter(typeof(T), "x");
-                    var propertyAccess = Expression.Property(parameter, property);
-                    var orderByExpr = Expression.Lambda(propertyAccess, parameter);
-
-                    string methodName = desc ? "OrderByDescending" : "OrderBy";
-                    var resultExpr = Expression.Call(typeof(Queryable), methodName,
-                        new Type[] { typeof(T), property.PropertyType },
-                        query.Expression, Expression.Quote(orderByExpr));
-
-                    query = query.Provider.CreateQuery<T>(resultExpr);
-                }
-            }
-
-            var total = await query.CountAsync();
-            var data = await query.Skip((page - 1) * pageSize).Take(pageSize).ToListAsync();
-
-            return (data, total);
-        }
+        // ===== Search =====
+        public virtual Task<IEnumerable<T>> SearchAsync(
+            string keyword,
+            params Expression<Func<T, string>>[] fields)
+            => _repository.SearchAsync(keyword, fields);
     }
 }

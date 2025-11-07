@@ -1,86 +1,47 @@
 using Microsoft.AspNetCore.Mvc;
 using server.Models;
-using server.Services.Interfaces;
+using server.Services.Implementations;
 
 namespace server.Controllers
 {
     [ApiController]
     [Route("api/[controller]")]
-    public class UserController : ControllerBase
+    public class UserController : BaseController<User>
     {
-        private readonly IUserService _userService;
+        private readonly UserService _userService;
 
-        public UserController(IUserService userService)
+        public UserController(UserService userService) : base(userService)
         {
             _userService = userService;
         }
 
-        [HttpGet]
-        public async Task<IActionResult> GetAll()
+        // Get all users with related data (Feedbacks, Subscriptions, Transactions)
+        [HttpGet("with-relations")]
+        public async Task<IActionResult> GetAllWithRelations()
         {
-            var users = await _userService.GetAllAsync();
+            var users = await _userService.GetAllWithRelationsAsync();
             return Ok(users);
         }
 
-        [HttpGet("{id}")]
-        public async Task<IActionResult> GetById(int id)
+        // Get single user with relationships
+        [HttpGet("{id}/details")]
+        public async Task<IActionResult> GetUserWithRelations(int id)
         {
-            var user = await _userService.GetByIdAsync(id);
-            if (user == null) return NotFound();
-            return Ok(user);
+            var user = await _userService.GetByIdWithRelationsAsync(id);
+            return user == null ? NotFound() : Ok(user);
         }
 
-        [HttpPost]
-        public async Task<IActionResult> Create([FromBody] User user)
+        // Example of keyword search (by FullName or Email)
+        [HttpGet("search")]
+        public override async Task<IActionResult> Search([FromQuery] string keyword)
         {
-            var created = await _userService.CreateAsync(user);
-            return CreatedAtAction(nameof(GetById), new { id = created.Id }, created);
+            var results = await _userService.SearchAsync(
+                keyword,
+                u => u.FullName,
+                u => u.Email
+            );
+
+            return Ok(results);
         }
-
-        [HttpPut("{id}")]
-        public async Task<IActionResult> Update(int id, [FromBody] User user)
-        {
-            var success = await _userService.UpdateAsync(id, user);
-            return success ? NoContent() : NotFound();
-        }
-
-        [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete(int id)
-        {
-            var success = await _userService.DeleteAsync(id);
-            return success ? NoContent() : NotFound();
-        }
-
-        [HttpPost("login")]
-        public async Task<IActionResult> Login([FromBody] LoginRequest login)
-        {
-            var user = await _userService.AuthenticateAsync(login.Email, login.Password);
-            if (user == null)
-                return Unauthorized(new { message = "Invalid credentials" });
-
-            return Ok(new
-            {
-                message = "Login successful",
-                user = new { user.Id, user.FullName, user.Email, user.Role }
-            });
-        }
-
-        [HttpGet("filter")]
-        public async Task<IActionResult> Filter(
-            [FromQuery] string? search = null,
-            [FromQuery] string? sortBy = null,
-            [FromQuery] bool desc = false,
-            [FromQuery] int page = 1,
-            [FromQuery] int pageSize = 20)
-        {
-            var (data, total) = await _userService.FilterAsync(search, sortBy, desc, page, pageSize);
-            return Ok(new { total, page, pageSize, data });
-        }
-    }
-
-    public class LoginRequest
-    {
-        public string Email { get; set; } = string.Empty;
-        public string Password { get; set; } = string.Empty;
     }
 }
