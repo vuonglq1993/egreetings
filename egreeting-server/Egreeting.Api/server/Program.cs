@@ -1,13 +1,27 @@
 using Microsoft.EntityFrameworkCore;
+using server.Helpers;
 using server.Models;
-using server.Repositories;
 using server.Repositories.Interfaces;
 using server.Repositories.Implementations;
-using server.Services;
 using server.Services.Interfaces;
 using server.Services.Implementations;
+using server.Middleware;
+using DotNetEnv;
+using server.Repositories;
+using server.Services;
+
+// ===== Load .env =====
+DotNetEnv.Env.Load();
 
 var builder = WebApplication.CreateBuilder(args);
+
+// ===== Read config from environment =====
+var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY")!;
+var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER")!;
+var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE")!;
+var jwtDuration = int.Parse(Environment.GetEnvironmentVariable("JWT_DURATION")!);
+
+var dbConnection = Environment.GetEnvironmentVariable("EGREETING_DB_CONNECTION")!;
 
 // ===== Add controllers & Swagger =====
 builder.Services.AddControllers();
@@ -16,7 +30,7 @@ builder.Services.AddSwaggerGen();
 
 // ===== Database configuration =====
 builder.Services.AddDbContext<EGreetingDbContext>(options =>
-    options.UseSqlServer(builder.Configuration.GetConnectionString("EGreetingDB")));
+    options.UseSqlServer(dbConnection));
 
 // ===== Base Repositories & Services (generic) =====
 builder.Services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
@@ -44,7 +58,10 @@ builder.Services.AddScoped<ISubscriptionRecipientService, SubscriptionRecipientS
 builder.Services.AddScoped<ITemplateService, TemplateService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 
-// ===== Build & Configure app =====
+// ===== JWT Helper =====
+builder.Services.AddSingleton(new JwtHelper(jwtKey, jwtDuration));
+
+// ===== Build app =====
 var app = builder.Build();
 
 // ===== Swagger (dev only) =====
@@ -54,8 +71,14 @@ if (app.Environment.IsDevelopment())
     app.UseSwaggerUI();
 }
 
-// ===== Middleware =====
+app.UseStaticFiles();
 app.UseHttpsRedirection();
+
+// ===== JWT Middleware =====
+app.UseMiddleware<JwtMiddleware>();
+
+// ===== Map Controllers =====
 app.MapControllers();
 
+// ===== Run =====
 app.Run();
