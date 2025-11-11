@@ -30,7 +30,11 @@ builder.Services.AddSwaggerGen();
 
 // ===== Database configuration =====
 builder.Services.AddDbContext<EGreetingDbContext>(options =>
-    options.UseSqlServer(dbConnection));
+{
+    var connectionString = Environment.GetEnvironmentVariable("EGREETING_DB_CONNECTION");
+    options.UseSqlServer(connectionString);
+});
+
 
 // ===== Base Repositories & Services (generic) =====
 builder.Services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
