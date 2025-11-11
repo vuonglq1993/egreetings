@@ -1,13 +1,218 @@
-<!doctype html>
-<html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/vite.svg" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>admin</title>
-  </head>
-  <body>
-    <div id="root"></div>
-    <script type="module" src="/src/main.tsx"></script>
-  </body>
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+
+  <style>
+    body {
+      min-height: 100vh;
+      background-color: #f4f6f9;
+      overflow-x: hidden;
+    }
+    .sidebar {
+      width: 250px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      background: #343a40;
+      color: #adb5bd;
+      transition: width 0.3s;
+    }
+    .sidebar .sidebar-header {
+      padding: 1.5rem 1rem;
+      background: #212529;
+      color: #fff;
+      text-align: center;
+    }
+    .sidebar a {
+      color: #adb5bd;
+      display: block;
+      padding: 0.75rem 1rem;
+      text-decoration: none;
+      transition: background 0.2s, color 0.2s;
+    }
+    .sidebar a:hover, .sidebar a.active {
+      background: #495057;
+      color: #fff;
+    }
+    .sidebar .bi {
+      margin-right: 0.75rem;
+    }
+    .content {
+      margin-left: 250px;
+      padding: 2rem 1.5rem;
+      transition: margin-left 0.3s;
+    }
+    .topbar {
+      position: fixed;
+      top: 0;
+      left: 250px;
+      right: 0;
+      height: 56px;
+      background: #fff;
+      border-bottom: 1px solid #dee2e6;
+      display: flex;
+      align-items: center;
+      padding: 0 1.5rem;
+      transition: left 0.3s;
+      z-index: 1000;
+    }
+    .toggle-btn {
+      font-size: 1.25rem;
+      cursor: pointer;
+      margin-right: 1rem;
+      color: #343a40;
+    }
+
+    /* Khi collapsed sidebar */
+    .sidebar.collapsed {
+      width: 80px;
+    }
+    .sidebar.collapsed .bi {
+      margin-right: 0;
+    }
+    .sidebar.collapsed a span {
+      display: none;
+    }
+    .sidebar.collapsed .sidebar-header {
+      text-align: center;
+      padding: 1.5rem 0.5rem;
+    }
+    .content.expanded {
+      margin-left: 80px;
+    }
+    .topbar.expanded {
+      left: 80px;
+    }
+
+    .card-stat {
+      border: none;
+      border-radius: 0.5rem;
+      box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      ADMIN
+    </div>
+    <a href="#" class="active"><i class="bi bi-speedometer2"></i><span> Dashboard</span></a>
+    <a href="#"><i class="bi bi-box-seam"></i><span> Products</span></a>
+    <a href="#"><i class="bi bi-people"></i><span> Users</span></a>
+    <a href="#"><i class="bi bi-bag-check"></i><span> Orders</span></a>
+    <a href="#"><i class="bi bi-gear"></i><span> Settings</span></a>
+    <a href="#"><i class="bi bi-box-arrow-right"></i><span> Logout</span></a>
+  </nav>
+
+  <!-- Topbar -->
+  <header class="topbar" id="topbar">
+    <div class="d-flex align-items-center">
+      <i class="bi bi-list toggle-btn" id="toggleBtn"></i>
+      <h5 class="mb-0">Dashboard</h5>
+    </div>
+    <div class="ms-auto d-flex align-items-center">
+      <span class="me-3 text-muted">Admin</span>
+      <img src="https://i.pravatar.cc/40" class="rounded-circle" alt="Admin Avatar" />
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="content" id="content">
+    <div class="mt-5 pt-4">
+      <div class="row g-4">
+        <div class="col-xl-3 col-md-6">
+          <div class="card card-stat p-3 text-center">
+            <i class="bi bi-box-seam fs-2 text-primary mb-2"></i>
+            <h6 class="fw-bold text-uppercase">Total Products</h6>
+            <h4>1,250</h4>
+          </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+          <div class="card card-stat p-3 text-center">
+            <i class="bi bi-people fs-2 text-success mb-2"></i>
+            <h6 class="fw-bold text-uppercase">Users</h6>
+            <h4>3,102</h4>
+          </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+          <div class="card card-stat p-3 text-center">
+            <i class="bi bi-bag-check fs-2 text-warning mb-2"></i>
+            <h6 class="fw-bold text-uppercase">Orders</h6>
+            <h4>762</h4>
+          </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+          <div class="card card-stat p-3 text-center">
+            <i class="bi bi-cash-coin fs-2 text-danger mb-2"></i>
+            <h6 class="fw-bold text-uppercase">Revenue</h6>
+            <h4>$89,400</h4>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-5">
+        <div class="card p-4">
+          <h5 class="fw-bold mb-3">Recent Activity</h5>
+          <table class="table table-hover">
+            <thead class="table-light">
+              <tr>
+                <th>#</th>
+                <th>User</th>
+                <th>Activity</th>
+                <th>Time</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>1</td>
+                <td>John Doe</td>
+                <td>Created new project</td>
+                <td>2 mins ago</td>
+              </tr>
+              <tr>
+                <td>2</td>
+                <td>Jane Smith</td>
+                <td>Uploaded files</td>
+                <td>10 mins ago</td>
+              </tr>
+              <tr>
+                <td>3</td>
+                <td>Emily Johnson</td>
+                <td>Updated status</td>
+                <td>30 mins ago</td>
+              </tr>
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Script Toggle -->
+  <script>
+    const toggleBtn = document.getElementById('toggleBtn');
+    const sidebar = document.getElementById('sidebar');
+    const content = document.getElementById('content');
+    const topbar = document.getElementById('topbar');
+
+    toggleBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+      content.classList.toggle('expanded');
+      topbar.classList.toggle('expanded');
+    });
+  </script>
+</body>
 </html>
