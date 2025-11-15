@@ -234,7 +234,7 @@ const cardCategories = [
     label: "Birthday",
     path: "birthday",
     bg: "#ffdfd0",
-    img: "https://cdn.greetingsisland.com/63e763313066a5020a5d8174/images/2023/card-set-happy-birthday-2023/pink-black-gold-stars-61ee4ec6a1264.jpeg",
+    img: "public/birthday.jpg",
   },
   {
     label: "Wedding",

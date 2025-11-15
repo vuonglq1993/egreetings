@@ -8,6 +8,7 @@ import About from './pages/About';
 import Contact from './pages/Contact';
 import Header from './components/header/Header';
 import Footer from './components/footer/Footer';
+import Auth from './pages/Login/auth';
 
 
 export default function App() {
@@ -17,7 +18,8 @@ return (
 <main style={{ minHeight: '70vh' }}>
 <Routes>
 <Route path="/" element={<Home />} />
-<Route path="/category/:type" element={<Category />} />
+<Route path="/login" element={<Auth />} />
+<Route path="/category/{id}" element={<Category />} />
 <Route path="/card/:id" element={<CardDetail />} />
 <Route path="/editor/:id" element={<Editor />} />
 <Route path="/about" element={<About />} />
