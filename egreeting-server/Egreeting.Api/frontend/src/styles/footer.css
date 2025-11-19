@@ -1,0 +1,138 @@
+/* src/styles/footer.css */
+
+/* CTA - Luxury Glass */
+.footer-cta {
+    background: linear-gradient(135deg, rgba(30, 58, 138, 0.8), rgba(59, 130, 246, 0.6));
+    backdrop-filter: blur(14px);
+    border-top: 1px solid rgba(251, 191, 36, 0.2);
+    padding: 4rem 0;
+    text-align: center;
+    position: relative;
+    overflow: hidden;
+  }
+  
+  .footer-cta::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: radial-gradient(circle at center, rgba(251, 191, 36, 0.1), transparent 70%);
+    z-index: 0;
+  }
+  
+  .footer-cta h3 {
+    color: #fbbf24;
+    font-family: 'Playfair Display', serif;
+    font-weight: 700;
+    font-size: 2.2rem;
+    position: relative;
+    z-index: 1;
+  }
+  
+  .footer-cta h3::after {
+    background: linear-gradient(90deg, transparent, #fbbf24, transparent);
+    height: 4px;
+    bottom: -12px;
+  }
+  
+  .footer-cta p {
+    color: rgba(255, 255, 255, 0.9);
+    font-size: 1.1rem;
+    z-index: 1;
+  }
+  
+  .cta-button {
+    background: linear-gradient(135deg, #fbbf24, #f59e0b);
+    color: #1e293b;
+    border: none;
+    border-radius: 50px;
+    padding: 0.8rem 2.8rem;
+    font-weight: 600;
+    font-size: 1.1rem;
+    box-shadow: 0 8px 25px rgba(251, 191, 36, 0.4);
+    transition: all 0.3s ease;
+    position: relative;
+    z-index: 1;
+  }
+  
+  .cta-button:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 15px 35px rgba(251, 191, 36, 0.6);
+    background: linear-gradient(135deg, #f59e0b, #d97706);
+  }
+  
+  /* Main Footer */
+  .footer-main {
+    background: rgba(15, 25, 42, 0.85);
+    backdrop-filter: blur(12px);
+    padding: 3rem 0;
+    border-top: 1px solid rgba(251, 191, 36, 0.15);
+  }
+  
+  .footer-brand h5 {
+    color: #fbbf24;
+    font-family: 'Playfair Display', serif;
+  }
+  
+  .footer-brand p {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+  }
+  
+  .social-links a {
+    color: rgba(255, 255, 255, 0.6);
+    font-size: 1.3rem;
+    transition: all 0.3s ease;
+  }
+  
+  .social-links a:hover {
+    color: #fbbf24;
+    transform: translateY(-3px);
+  }
+  
+  .footer-links h6 {
+    color: #fbbf24;
+    font-weight: 600;
+    font-size: 0.9rem;
+    letter-spacing: 1.5px;
+  }
+  
+  .footer-links a {
+    color: rgba(255, 255, 255, 0.7);
+    font-size: 0.9rem;
+    transition: color 0.3s ease;
+  }
+  
+  .footer-links a:hover {
+    color: #fbbf24;
+  }
+  
+  /* Newsletter */
+  .newsletter input {
+    background: rgba(255, 255, 255, 0.1);
+    border: 1px solid rgba(251, 191, 36, 0.3);
+    color: white;
+    border-radius: 50px;
+  }
+  
+  .newsletter input::placeholder {
+    color: rgba(255, 255, 255, 0.6);
+  }
+  
+  .newsletter .btn {
+    background: #fbbf24;
+    color: #1e293b;
+    font-weight: 600;
+    border-radius: 50px;
+  }
+  
+  /* Bottom Bar */
+  .footer-bottom {
+    background: rgba(10, 15, 30, 0.9);
+    border-top: 1px solid rgba(251, 191, 36, 0.2);
+    padding: 1rem 0;
+    font-size: 0.85rem;
+  }
+  
+  .footer-bottom p {
+    color: rgba(255, 255, 255, 0.6);
+  }
