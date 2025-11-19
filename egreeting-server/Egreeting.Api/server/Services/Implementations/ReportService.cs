@@ -8,12 +8,15 @@ namespace server.Services.Implementations
     {
         private readonly IReportRepository _reportRepository;
 
-        public ReportService(IReportRepository reportRepository)
-            : base(reportRepository)
+        public ReportService(IReportRepository reportRepository) : base(reportRepository)
         {
             _reportRepository = reportRepository;
         }
 
-        // Nếu cần các hàm đặc thù, ví dụ báo cáo tổng hợp, thêm ở đây
+        public async Task<IEnumerable<Report>> GetAllWithRelationsAsync()
+            => await _reportRepository.GetAllWithRelationsAsync();
+
+        public async Task<Report?> GetByIdWithRelationsAsync(int id)
+            => await _reportRepository.GetByIdWithRelationsAsync(id);
     }
 }

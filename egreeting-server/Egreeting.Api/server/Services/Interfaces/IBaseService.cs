@@ -1,6 +1,6 @@
 using System.Linq.Expressions;
 
-namespace server.Services
+namespace server.Services.Interfaces
 {
     public interface IBaseService<T> where T : class
     {

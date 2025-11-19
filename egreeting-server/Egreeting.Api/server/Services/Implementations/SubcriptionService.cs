@@ -8,16 +8,16 @@ namespace server.Services.Implementations
     {
         private readonly ISubscriptionRepository _subscriptionRepository;
 
-        public SubscriptionService(ISubscriptionRepository subscriptionRepository)
-            : base(subscriptionRepository)
+        public SubscriptionService(ISubscriptionRepository subscriptionRepository) : base(subscriptionRepository)
         {
             _subscriptionRepository = subscriptionRepository;
         }
 
-        // ===== Method quan hệ =====
+        // Lấy tất cả subscription kèm quan hệ
         public async Task<IEnumerable<Subscription>> GetAllWithRelationsAsync()
             => await _subscriptionRepository.GetAllWithRelationsAsync();
 
+        // Lấy subscription theo id kèm quan hệ
         public async Task<Subscription?> GetByIdWithRelationsAsync(int id)
             => await _subscriptionRepository.GetByIdWithRelationsAsync(id);
     }

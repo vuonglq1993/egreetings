@@ -10,5 +10,7 @@ namespace server.Repositories.Interfaces
             Func<IQueryable<User>, IOrderedQueryable<User>>? orderBy = null);
 
         Task<User?> GetByIdWithRelationsAsync(int id);
+        Task<bool> CheckEmailExistsAsync(string email);  // NEW
+
     }
 }

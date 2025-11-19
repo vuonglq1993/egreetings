@@ -1,39 +1,34 @@
 using Microsoft.AspNetCore.Mvc;
 using server.Models;
-using server.Services.Implementations;
+using server.Services.Interfaces;
 
 namespace server.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
+    [ApiController]
     public class PackageController : BaseController<Package>
     {
-        private readonly PackageService _service;
+        private readonly IPackageService _packageService;
 
-        public PackageController(PackageService service) : base(service)
+        public PackageController(IPackageService packageService) : base(packageService)
         {
-            _service = service;
+            _packageService = packageService;
         }
 
-        // 🔍 Search theo keyword (Name, Description)
-        [HttpGet("search-by-keyword")]
-        public async Task<IActionResult> Search([FromQuery] string keyword)
+        [HttpGet("with-relations")]
+        public async Task<IActionResult> GetAllWithRelations()
         {
-            var results = await _service.SearchPackagesAsync(keyword);
-            return Ok(results);
+            var data = await _packageService.GetAllWithRelationsAsync();
+            return Ok(data);
         }
 
-        // 🔍 Search có phân trang (optional)
-        [HttpGet("advanced-search")]
-        public async Task<IActionResult> AdvancedSearch(
-            [FromQuery] string? search = null,
-            [FromQuery] string? sortBy = null,
-            [FromQuery] bool isDescending = false,
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 10)
+        [HttpGet("{id}/with-relations")]
+        public async Task<IActionResult> GetByIdWithRelations(int id)
         {
-            var (items, totalCount) = await _service.SearchAsync(search, sortBy, isDescending, pageNumber, pageSize);
-            return Ok(new { items, totalCount });
+            var data = await _packageService.GetByIdWithRelationsAsync(id);
+            if (data == null) return NotFound();
+            return Ok(data);
         }
+        
     }
 }

@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using server.Models;
 using server.Repositories.Interfaces;
+using server.DTOs;
 
 namespace server.Repositories.Implementations
 {
@@ -22,6 +23,35 @@ namespace server.Repositories.Implementations
                 .Include(c => c.Templates)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(c => c.Id == id);
+        }
+
+        public async Task<IEnumerable<CategoryDTO>> GetAllWithTemplateCountAsync()
+        {
+            return await _dbSet
+                .Select(c => new CategoryDTO
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    Description = c.Description,
+                    TemplateCount = c.Templates.Count()
+                })
+                .AsNoTracking()
+                .ToListAsync();
+        }
+
+        public async Task<CategoryDTO?> GetByIdWithTemplateCountAsync(int id)
+        {
+            return await _dbSet
+                .Where(c => c.Id == id)
+                .Select(c => new CategoryDTO
+                {
+                    Id = c.Id,
+                    Name = c.Name,
+                    Description = c.Description,
+                    TemplateCount = c.Templates.Count()
+                })
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
         }
     }
 }

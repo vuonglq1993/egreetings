@@ -14,4 +14,14 @@ namespace server.DTOs
         public int SubscriptionCount { get; set; }
         public int TransactionCount { get; set; }
     }
-}
+    public class UpdateProfileRequest
+    {
+        public string? FullName { get; set; }
+        public string? Email { get; set; }
+    }
+    public class ChangePasswordRequest
+    {
+        public string CurrentPassword { get; set; } = null!;
+        public string NewPassword { get; set; } = null!;
+        public string ConfirmPassword { get; set; } = null!;
+    }}

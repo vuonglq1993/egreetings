@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text.Json.Serialization;
 
 namespace server.Models;
 
@@ -23,6 +24,7 @@ public partial class Template
 
     public DateTime CreatedAt { get; set; }
 
+    [JsonIgnore]
     public virtual Category Category { get; set; } = null!;
 
     public virtual ICollection<Transaction> Transactions { get; set; } = new List<Transaction>();

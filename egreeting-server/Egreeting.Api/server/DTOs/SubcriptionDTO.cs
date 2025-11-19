@@ -1,3 +1,5 @@
+using System.ComponentModel.DataAnnotations;
+
 namespace server.DTOs
 {
     public class SubscriptionDTO
@@ -15,5 +17,22 @@ namespace server.DTOs
 
         // Count of recipients
         public int RecipientCount { get; set; }
+    }
+
+    public class CreateSubscriptionDto
+    {
+        [Required]
+        public int UserId { get; set; }
+
+        [Required]
+        public int PackageId { get; set; }     
+
+        [Required]
+        public DateOnly StartDate { get; set; }
+
+        [Required]
+        public DateOnly EndDate { get; set; }
+
+        public string? PaymentStatus { get; set; } = "Pending";
     }
 }

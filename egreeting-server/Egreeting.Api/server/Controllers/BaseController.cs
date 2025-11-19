@@ -1,5 +1,5 @@
 using Microsoft.AspNetCore.Mvc;
-using server.Services;
+using server.Services.Interfaces;
 
 namespace server.Controllers
 {
@@ -14,7 +14,6 @@ namespace server.Controllers
             _service = service;
         }
 
-        // ===== CRUD =====
         [HttpGet]
         public virtual async Task<IActionResult> GetAll()
         {
@@ -53,7 +52,6 @@ namespace server.Controllers
             return NoContent();
         }
 
-        // ===== SEARCH (có phân trang) =====
         [HttpGet("search")]
         public virtual async Task<IActionResult> Search(
             [FromQuery] string? search = null,

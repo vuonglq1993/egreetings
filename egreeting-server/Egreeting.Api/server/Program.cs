@@ -1,4 +1,8 @@
 using Microsoft.EntityFrameworkCore;
+using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.IdentityModel.Tokens;
+
+using System.Text; 
 using server.Helpers;
 using server.Models;
 using server.Repositories.Interfaces;
@@ -13,28 +17,45 @@ using server.Services;
 // ===== Load .env =====
 DotNetEnv.Env.Load();
 
+// ===== Read configuration from environment =====
 var builder = WebApplication.CreateBuilder(args);
 
-// ===== Read config from environment =====
-var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY")!;
-var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER")!;
-var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE")!;
-var jwtDuration = int.Parse(Environment.GetEnvironmentVariable("JWT_DURATION")!);
+// ----- JWT Config -----
+var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") ?? throw new ArgumentException("JWT_KEY missing");
+var key = Encoding.UTF8.GetBytes(jwtKey); 
 
-var dbConnection = Environment.GetEnvironmentVariable("EGREETING_DB_CONNECTION")!;
+var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "EGreetingAPI";
+var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "EGreetingClient";
+var jwtDuration = int.TryParse(Environment.GetEnvironmentVariable("JWT_DURATION"), out var minutes) ? minutes : 1440;
 
-// ===== Add controllers & Swagger =====
+// ----- Database -----
+var dbConnection = Environment.GetEnvironmentVariable("EGREETING_DB_CONNECTION") 
+                   ?? throw new ArgumentException("EGREETING_DB_CONNECTION missing");
+
+// ----- Allowed origins -----
+var allowedOrigins = Environment.GetEnvironmentVariable("ALLOWED_ORIGINS")?
+    .Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
+
+// ===== Add services =====
 builder.Services.AddControllers();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// ===== Database configuration =====
+// ===== EF Core DbContext =====
 builder.Services.AddDbContext<EGreetingDbContext>(options =>
-{
-    var connectionString = Environment.GetEnvironmentVariable("EGREETING_DB_CONNECTION");
-    options.UseSqlServer(connectionString);
-});
+    options.UseSqlServer(dbConnection)
+);
 
+// ===== CORS =====
+builder.Services.AddCors(options =>
+{
+    options.AddPolicy("AllowFrontend", policy =>
+    {
+        policy.WithOrigins(allowedOrigins)
+              .AllowAnyHeader()
+              .AllowAnyMethod();
+    });
+});
 
 // ===== Base Repositories & Services (generic) =====
 builder.Services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
@@ -62,27 +83,50 @@ builder.Services.AddScoped<ISubscriptionRecipientService, SubscriptionRecipientS
 builder.Services.AddScoped<ITemplateService, TemplateService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 
-// ===== JWT Helper =====
-builder.Services.AddSingleton(new JwtHelper(jwtKey, jwtDuration));
+builder.Services.AddAuthentication(options =>
+{
+    options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
+    options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
+})
+.AddJwtBearer(options =>
+{
+    options.TokenValidationParameters = new TokenValidationParameters
+    {
+        ValidateIssuer = true,
+        ValidateAudience = false,
+        ValidateLifetime = true,
+        ValidateIssuerSigningKey = true,
+        ValidIssuer = jwtIssuer,
+        IssuerSigningKey = new SymmetricSecurityKey(key)
+    };
+});
+// ===== JWT Helper (inject IConfiguration via factory) =====
+builder.Services.AddSingleton<JwtHelper>(sp =>
+{
+    return new JwtHelper(new ConfigurationBuilder().AddEnvironmentVariables().Build());
+});
 
-// ===== Build app =====
+// ===== Build App =====
 var app = builder.Build();
 
-// ===== Swagger (dev only) =====
+
+
+// ===== Middleware =====
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
     app.UseSwaggerUI();
 }
 
-app.UseStaticFiles();
 app.UseHttpsRedirection();
-
+app.UseStaticFiles();
+// ===== CORS =====
+app.UseCors("AllowFrontend");
 // ===== JWT Middleware =====
 app.UseMiddleware<JwtMiddleware>();
 
 // ===== Map Controllers =====
 app.MapControllers();
 
-// ===== Run =====
+// ===== Run App =====
 app.Run();

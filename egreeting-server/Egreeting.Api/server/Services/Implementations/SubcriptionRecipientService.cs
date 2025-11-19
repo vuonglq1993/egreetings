@@ -6,23 +6,17 @@ namespace server.Services.Implementations
 {
     public class SubscriptionRecipientService : BaseService<SubscriptionRecipient>, ISubscriptionRecipientService
     {
-        private readonly ISubscriptionRecipientRepository _subscriptionRecipientRepository;
+        private readonly ISubscriptionRecipientRepository _repository;
 
-        public SubscriptionRecipientService(ISubscriptionRecipientRepository subscriptionRecipientRepository)
-            : base(subscriptionRecipientRepository)
+        public SubscriptionRecipientService(ISubscriptionRecipientRepository repository) : base(repository)
         {
-            _subscriptionRecipientRepository = subscriptionRecipientRepository;
+            _repository = repository;
         }
 
-        // Các hàm đặc thù, ví dụ lấy dữ liệu có join Subscription
-        public async Task<IEnumerable<SubscriptionRecipient>> GetAllWithSubscriptionAsync()
-        {
-            return await _subscriptionRecipientRepository.GetAllWithSubscriptionAsync();
-        }
+        public async Task<IEnumerable<SubscriptionRecipient>> GetAllWithRelationsAsync()
+            => await _repository.GetAllWithRelationsAsync();
 
-        public async Task<SubscriptionRecipient?> GetByIdWithSubscriptionAsync(int id)
-        {
-            return await _subscriptionRecipientRepository.GetByIdWithSubscriptionAsync(id);
-        }
+        public async Task<SubscriptionRecipient?> GetByIdWithRelationsAsync(int id)
+            => await _repository.GetByIdWithRelationsAsync(id);
     }
 }

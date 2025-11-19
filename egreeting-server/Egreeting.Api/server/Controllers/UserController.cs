@@ -1,6 +1,8 @@
 using Microsoft.AspNetCore.Mvc;
 using server.Models;
 using server.Services.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using server.DTOs;
 
 namespace server.Controllers
 {
@@ -29,5 +31,71 @@ namespace server.Controllers
             if (data == null) return NotFound();
             return Ok(data);
         }
+        [HttpGet("check-email")]
+        public async Task<IActionResult> CheckEmail([FromQuery] string email)
+        {
+            if (string.IsNullOrWhiteSpace(email))
+                return BadRequest("Email is required");
+
+            var exists = await _userService.CheckEmailExistsAsync(email);
+            return Ok(new { exists });
+        }
+        [HttpGet("me")]
+        [Authorize]
+        public async Task<IActionResult> GetCurrentUser()
+        {
+            var userId = int.Parse(User.FindFirst("id")!.Value);
+            var user = await _userService.GetByIdWithRelationsAsync(userId);
+            if (user == null) return NotFound();
+
+            var dto = new UserDTO
+            {
+                Id = user.Id,
+                FullName = user.FullName,
+                Email = user.Email,
+                Role = user.Role,
+                Status = user.Status,
+                CreatedAt = user.CreatedAt,
+                FeedbackCount = user.Feedbacks?.Count ?? 0,
+                SubscriptionCount = user.Subscriptions?.Count ?? 0,
+                TransactionCount = user.Transactions?.Count ?? 0
+            };
+
+            return Ok(dto);
+        }
+
+        [HttpPut("update-profile")]
+        [Authorize]
+        public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
+        {
+            var userId = int.Parse(User.FindFirst("id")!.Value);
+            var user = await _userService.GetByIdAsync(userId);
+            if (user == null) return NotFound();
+
+            user.FullName = request.FullName ?? user.FullName;
+            user.Email = request.Email ?? user.Email;
+
+            await _userService.UpdateAsync(user.Id, user);
+            return Ok(new { message = "Profile updated successfully" });
+        }
+        [HttpPut("change-password")]
+        [Authorize]
+        public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
+        {
+            var userId = int.Parse(User.FindFirst("id")!.Value);
+            var user = await _userService.GetByIdAsync(userId);
+            if (user == null) return NotFound();
+
+            if (!BCrypt.Net.BCrypt.Verify(request.CurrentPassword, user.PasswordHash))
+                return BadRequest(new { message = "Current password is incorrect" });
+
+            if (BCrypt.Net.BCrypt.Verify(request.NewPassword, user.PasswordHash))
+                return BadRequest(new { message = "New password must be different from current password" });
+
+            await _userService.UpdatePasswordAsync(userId, request.NewPassword);
+
+            return Ok(new { message = "Password changed successfully!" });
+        }
+
     }
 }

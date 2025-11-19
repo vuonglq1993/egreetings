@@ -1,33 +1,35 @@
 using Microsoft.AspNetCore.Mvc;
 using server.Models;
-using server.Services.Implementations;
+using server.Services.Interfaces;
 
 namespace server.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
+    [ApiController]
     public class SubscriptionRecipientController : BaseController<SubscriptionRecipient>
     {
-        private readonly SubscriptionRecipientService _service;
+        private readonly ISubscriptionRecipientService _service;
 
-        public SubscriptionRecipientController(SubscriptionRecipientService service) : base(service)
+        public SubscriptionRecipientController(ISubscriptionRecipientService service) : base(service)
         {
             _service = service;
         }
 
-        [HttpGet("with-subscription")]
-        public async Task<IActionResult> GetAllWithSubscription()
+        // GET: api/subscriptionrecipient/with-relations
+        [HttpGet("with-relations")]
+        public async Task<IActionResult> GetAllWithRelations()
         {
-            var data = await _service.GetAllWithSubscriptionAsync();
+            var data = await _service.GetAllWithRelationsAsync();
             return Ok(data);
         }
 
-        [HttpGet("with-subscription/{id}")]
-        public async Task<IActionResult> GetByIdWithSubscription(int id)
+        // GET: api/subscriptionrecipient/5/with-relations
+        [HttpGet("{id}/with-relations")]
+        public async Task<IActionResult> GetByIdWithRelations(int id)
         {
-            var item = await _service.GetByIdWithSubscriptionAsync(id);
-            if (item == null) return NotFound();
-            return Ok(item);
+            var data = await _service.GetByIdWithRelationsAsync(id);
+            if (data == null) return NotFound();
+            return Ok(data);
         }
     }
 }

@@ -1,4 +1,3 @@
-using System.Linq.Expressions;
 using server.Models;
 using Microsoft.EntityFrameworkCore;
 using server.Repositories.Interfaces;
@@ -9,6 +8,14 @@ namespace server.Repositories.Implementations
     {
         public ReportRepository(EGreetingDbContext context) : base(context) { }
 
-        // Nếu cần mở rộng hàm đặc thù, thêm ở đây
+        public async Task<IEnumerable<Report>> GetAllWithRelationsAsync()
+        {
+            return await _dbSet.AsNoTracking().ToListAsync();
+        }
+
+        public async Task<Report?> GetByIdWithRelationsAsync(int id)
+        {
+            return await _dbSet.AsNoTracking().FirstOrDefaultAsync(r => r.Id == id);
+        }
     }
 }

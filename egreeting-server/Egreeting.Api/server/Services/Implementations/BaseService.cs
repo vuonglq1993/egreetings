@@ -1,9 +1,10 @@
 using System.Linq.Expressions;
 using System.Reflection;
 using System.Linq.Dynamic.Core;
-using server.Repositories;
+using server.Repositories.Interfaces;
+using server.Services.Interfaces;
 
-namespace server.Services
+namespace server.Services.Implementations
 {
     public class BaseService<T> : IBaseService<T> where T : class
     {

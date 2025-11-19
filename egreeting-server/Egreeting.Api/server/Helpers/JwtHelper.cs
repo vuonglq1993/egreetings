@@ -2,64 +2,63 @@ using System;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
-using Microsoft.IdentityModel.Tokens;
 using server.Models;
+using Microsoft.Extensions.Configuration;
+using Microsoft.IdentityModel.Tokens;
 
 namespace server.Helpers
 {
     public class JwtHelper
     {
-        private readonly string _secret;
-        private readonly int _expiryMinutes;
+        private readonly IConfiguration _configuration;
 
-        public JwtHelper(string secret, int expiryMinutes = 60)
+        public JwtHelper(IConfiguration configuration)
         {
-            _secret = secret;
-            _expiryMinutes = expiryMinutes;
+            _configuration = configuration;
         }
 
-        // Tạo token cho user
-        public string GenerateToken(User user)
+        public string GenerateToken(User user, int expireMinutes = 60)
         {
-            var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_secret);
+            var key = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration["JWT_KEY"]));
+            var creds = new SigningCredentials(key, SecurityAlgorithms.HmacSha256);
 
-            var tokenDescriptor = new SecurityTokenDescriptor
+            var claims = new[]
             {
-                Subject = new ClaimsIdentity(new[]
-                {
-                    new Claim("id", user.Id.ToString()),
-                    new Claim(ClaimTypes.Name, user.FullName),
-                    new Claim(ClaimTypes.Email, user.Email),
-                    new Claim(ClaimTypes.Role, user.Role)
-                }),
-                Expires = DateTime.UtcNow.AddMinutes(_expiryMinutes),
-                SigningCredentials = new SigningCredentials(new SymmetricSecurityKey(key),
-                    SecurityAlgorithms.HmacSha256Signature)
+                new Claim("id", user.Id.ToString()),
+                new Claim(ClaimTypes.Name, user.FullName),
+                new Claim(ClaimTypes.Email, user.Email),
+                new Claim(ClaimTypes.Role, user.Role)
             };
 
-            var token = tokenHandler.CreateToken(tokenDescriptor);
-            return tokenHandler.WriteToken(token);
+            var token = new JwtSecurityToken(
+                issuer: _configuration["JWT_ISSUER"],
+                audience: _configuration["JWT_ISSUER"],
+                claims: claims,
+                expires: DateTime.UtcNow.AddMinutes(expireMinutes),
+                signingCredentials: creds
+            );
+
+            return new JwtSecurityTokenHandler().WriteToken(token);
         }
 
-        // Xác thực token
         public ClaimsPrincipal? ValidateToken(string token)
         {
-            if (string.IsNullOrWhiteSpace(token)) return null;
-
             var tokenHandler = new JwtSecurityTokenHandler();
-            var key = Encoding.ASCII.GetBytes(_secret);
+            var key = Encoding.UTF8.GetBytes(_configuration["JWT_KEY"]);
 
             try
             {
                 var principal = tokenHandler.ValidateToken(token, new TokenValidationParameters
                 {
+                    ValidateIssuer = true,
+                    ValidateAudience = true,
+                    ValidateLifetime = true,
                     ValidateIssuerSigningKey = true,
+                    ValidIssuer = _configuration["JWT_ISSUER"],
+                    ValidAudience = _configuration["JWT_ISSUER"],
                     IssuerSigningKey = new SymmetricSecurityKey(key),
-                    ValidateIssuer = false,
-                    ValidateAudience = false,
                     ClockSkew = TimeSpan.Zero
-                }, out SecurityToken validatedToken);
+                }, out _);
 
                 return principal;
             }

@@ -56,5 +56,27 @@ namespace server.Controllers
             var fileUrl = $"/uploads/images/{fileName}";
             return Ok(new { url = fileUrl });
         }
+        [HttpPost("personalized")]
+        public async Task<IActionResult> UploadPersonalized(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("No file uploaded");
+
+            var uploadsFolder = Path.Combine(_env.WebRootPath, "uploads", "personalized");
+            Directory.CreateDirectory(uploadsFolder);
+
+            var fileName = $"{Guid.NewGuid()}_{DateTime.Now:yyyyMMdd_HHmmss}.png";
+            var filePath = Path.Combine(uploadsFolder, fileName);
+
+            await using (var stream = new FileStream(filePath, FileMode.Create))
+            {
+                await file.CopyToAsync(stream);
+            }
+
+            var fileUrl = $"/uploads/personalized/{fileName}";
+            var fullUrl = $"{Request.Scheme}://{Request.Host}{fileUrl}";
+
+            return Ok(new { url = fullUrl, fileName });
+        }
     }
 }

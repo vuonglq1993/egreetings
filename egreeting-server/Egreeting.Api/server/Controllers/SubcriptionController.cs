@@ -1,33 +1,53 @@
 using Microsoft.AspNetCore.Mvc;
 using server.Models;
-using server.Services.Implementations;
+using server.Services.Interfaces;
+using server.DTOs;
 
 namespace server.Controllers
 {
-    [ApiController]
     [Route("api/[controller]")]
+    [ApiController]
     public class SubscriptionController : BaseController<Subscription>
     {
-        private readonly SubscriptionService _service;
+        private readonly ISubscriptionService _subscriptionService;
 
-        public SubscriptionController(SubscriptionService service) : base(service)
+        public SubscriptionController(ISubscriptionService subscriptionService) : base(subscriptionService)
         {
-            _service = service;
+            _subscriptionService = subscriptionService;
         }
 
+        // GET: api/subscription/with-relations
         [HttpGet("with-relations")]
         public async Task<IActionResult> GetAllWithRelations()
         {
-            var data = await _service.GetAllWithRelationsAsync();
+            var data = await _subscriptionService.GetAllWithRelationsAsync();
             return Ok(data);
         }
 
-        [HttpGet("with-relations/{id}")]
+        // GET: api/subscription/5/with-relations
+        [HttpGet("{id}/with-relations")]
         public async Task<IActionResult> GetByIdWithRelations(int id)
         {
-            var item = await _service.GetByIdWithRelationsAsync(id);
-            if (item == null) return NotFound();
-            return Ok(item);
+            var data = await _subscriptionService.GetByIdWithRelationsAsync(id);
+            if (data == null) return NotFound();
+            return Ok(data);
+        }
+        [HttpPost("create")] 
+        public async Task<IActionResult> Create([FromBody] CreateSubscriptionDto dto)
+        {
+            var subscription = new Subscription
+            {
+                UserId = dto.UserId,
+                PackageId = dto.PackageId,           
+                StartDate = dto.StartDate,
+                EndDate = dto.EndDate,
+                PaymentStatus = dto.PaymentStatus ?? "Pending",
+                CreatedAt = DateTime.UtcNow,
+                IsActive = true
+            };
+
+            await _subscriptionService.CreateAsync(subscription);
+            return Ok(subscription);
         }
     }
 }

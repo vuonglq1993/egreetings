@@ -36,5 +36,9 @@ namespace server.Repositories.Implementations
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Id == id);
         }
+        public async Task<bool> CheckEmailExistsAsync(string email)
+        {
+            return await _dbSet.AnyAsync(u => u.Email == email);
+        }
     }
 }

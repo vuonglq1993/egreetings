@@ -6,5 +6,9 @@ namespace server.Services.Interfaces
     {
         Task<IEnumerable<User>> GetAllWithRelationsAsync();
         Task<User?> GetByIdWithRelationsAsync(int id);
+        Task<bool> CheckEmailExistsAsync(string email); // NEW
+        Task UpdatePasswordAsync(int userId, string newPassword);
+
+
     }
 }

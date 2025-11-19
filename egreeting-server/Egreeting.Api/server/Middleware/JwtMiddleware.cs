@@ -1,33 +1,31 @@
-using Microsoft.AspNetCore.Http;
-using server.Helpers;
-using server.Services.Interfaces;
 using System.Threading.Tasks;
+using server.Services.Interfaces;
+using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Configuration;
 
 namespace server.Middleware
 {
     public class JwtMiddleware
     {
         private readonly RequestDelegate _next;
-        private readonly JwtHelper _jwtHelper;
+        private readonly IConfiguration _configuration;
 
-        public JwtMiddleware(RequestDelegate next, JwtHelper jwtHelper)
+        public JwtMiddleware(RequestDelegate next, IConfiguration configuration)
         {
             _next = next;
-            _jwtHelper = jwtHelper;
+            _configuration = configuration;
         }
 
-        public async Task Invoke(HttpContext context, IUserService userService)
+        public async Task Invoke(HttpContext context, IUserService userService, Helpers.JwtHelper jwtHelper)
         {
             var token = context.Request.Headers["Authorization"].FirstOrDefault()?.Split(" ").Last();
 
-            if (token != null)
+            if (!string.IsNullOrEmpty(token))
             {
-                var principal = _jwtHelper.ValidateToken(token);
+                var principal = jwtHelper.ValidateToken(token);
                 if (principal != null)
                 {
-                    var userId = int.Parse(principal.FindFirst("id")?.Value ?? "0");
-                    var user = await userService.GetByIdAsync(userId);
-                    context.Items["User"] = user;
+                    context.User = principal;
                 }
             }
 

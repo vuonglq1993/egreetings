@@ -1,6 +1,7 @@
 using Microsoft.EntityFrameworkCore;
 using server.Models;
 using server.Repositories.Interfaces;
+using System.Linq.Expressions;
 
 namespace server.Repositories.Implementations
 {
@@ -8,14 +9,21 @@ namespace server.Repositories.Implementations
     {
         public TransactionRepository(EGreetingDbContext context) : base(context) { }
 
-        // ===== Include relations =====
-        public async Task<IEnumerable<Transaction>> GetAllWithRelationsAsync()
+        public async Task<IEnumerable<Transaction>> GetAllWithRelationsAsync(
+            Expression<Func<Transaction, bool>>? filter = null,
+            Func<IQueryable<Transaction>, IOrderedQueryable<Transaction>>? orderBy = null)
         {
-            return await _dbSet
+            IQueryable<Transaction> query = _dbSet
                 .Include(t => t.User)
-                .Include(t => t.Template)
-                .AsNoTracking()
-                .ToListAsync();
+                .Include(t => t.Template);
+
+            if (filter != null)
+                query = query.Where(filter);
+
+            if (orderBy != null)
+                query = orderBy(query);
+
+            return await query.AsNoTracking().ToListAsync();
         }
 
         public async Task<Transaction?> GetByIdWithRelationsAsync(int id)

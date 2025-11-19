@@ -12,4 +12,5 @@ namespace server.DTOs
         // Optional stats
         public int SubscriptionCount { get; set; }
     }
+    
 }

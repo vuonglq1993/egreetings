@@ -9,7 +9,6 @@ namespace server.Repositories.Implementations
     {
         public SubscriptionRepository(EGreetingDbContext context) : base(context) { }
 
-        // ===== Các method quan hệ =====
         public async Task<IEnumerable<Subscription>> GetAllWithRelationsAsync()
         {
             return await _dbSet

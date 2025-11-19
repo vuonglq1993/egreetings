@@ -6,19 +6,17 @@ namespace server.Services.Implementations
 {
     public class TransactionService : BaseService<Transaction>, ITransactionService
     {
-        private readonly ITransactionRepository _transactionRepository;
+        private readonly ITransactionRepository _repository;
 
-        public TransactionService(ITransactionRepository transactionRepository)
-            : base(transactionRepository)
+        public TransactionService(ITransactionRepository repository) : base(repository)
         {
-            _transactionRepository = transactionRepository;
+            _repository = repository;
         }
 
-        // ===== Methods with relations =====
         public async Task<IEnumerable<Transaction>> GetAllWithRelationsAsync()
-            => await _transactionRepository.GetAllWithRelationsAsync();
+            => await _repository.GetAllWithRelationsAsync();
 
         public async Task<Transaction?> GetByIdWithRelationsAsync(int id)
-            => await _transactionRepository.GetByIdWithRelationsAsync(id);
+            => await _repository.GetByIdWithRelationsAsync(id);
     }
 }
