@@ -22,26 +22,41 @@ export default function Home() {
 
     // Fetch categories WITH TEMPLATE COUNT
     useEffect(() => {
+        let isMounted = true;
+
         const fetchCategories = async () => {
             try {
-                const res = await fetch(
-                    `${import.meta.env.VITE_API_URL}/category/with-template-count`
-                );
+                const url = `${import.meta.env.VITE_API_URL}/category/with-template-count`;
+
+                const res = await fetch(url);
+
+                if (!res.ok) {
+                    throw new Error(`Failed to load categories: ${res.status}`);
+                }
+
                 const data = await res.json();
-                setCategories(data);
+
+                if (isMounted) setCategories(data || []);
             } catch (err) {
-                console.error("Failed to fetch categories:", err);
+                console.error("Error fetching categories:", err);
             } finally {
-                setLoading(false);
+                if (isMounted) setLoading(false);
             }
         };
+
         fetchCategories();
+
+        return () => {
+            isMounted = false;
+        };
     }, []);
 
     const handleSearch = (e) => {
         e.preventDefault();
-        if (search.trim()) {
-            navigate(`/search?q=${encodeURIComponent(search)}`);
+        const query = search.trim();
+
+        if (query) {
+            navigate(`/search?q=${encodeURIComponent(query)}`);
         }
     };
 
@@ -58,16 +73,18 @@ export default function Home() {
 
                 {/* Categories */}
                 <Row className="mt-4">
-                    {categories.map((cat) => (
-                        <CategoryCard
-                            key={cat.name}
-                            category={cat.name}
-                            sample={cat.sampleTemplate || null}  
-                            count={cat.templateCount}          
-                            bgPattern="transparent"
-                            onClick={() => navigate(`/category/${cat.name}`)}
-                        />
-                    ))}
+                    {!loading &&
+                        categories.map((cat) => (
+                            <CategoryCard
+                                key={cat.name}
+                                category={cat.name}
+                                sample={cat.sampleTemplate || null}
+                                count={cat.templateCount}
+                                bgPattern="transparent"
+                                onClick={() => navigate(`/category/${cat.name}`)}
+                            />
+                        ))
+                    }
                 </Row>
             </Container>
         </>

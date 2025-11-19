@@ -1,13 +1,14 @@
-// src/pages/Category.jsx – CARD SIÊU ĐẸP 2026 EDITION
+// src/pages/Category.jsx – CARD SIÊU ĐẸP 2026 EDITION (Refactored)
 import { useParams, Link } from "react-router-dom";
 import { Container, Row, Col, Card, Spinner, Alert, Badge } from "react-bootstrap";
 import { useState, useEffect } from "react";
-import { motion } from "framer-motion"; // npm add framer-motion nếu chưa có
+import { motion } from "framer-motion";
 
 const API_BASE = `${import.meta.env.VITE_API_URL}/category`;
 
 export default function Category() {
   const { categoryName } = useParams();
+
   const [templates, setTemplates] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
@@ -16,37 +17,63 @@ export default function Category() {
   useEffect(() => {
     if (!categoryName) return;
 
+    let isMounted = true;
+
     const fetchTemplates = async () => {
       try {
         setLoading(true);
         setError(null);
 
-        const url = `${API_BASE}/${encodeURIComponent(categoryName)}/templates`;
-        const response = await fetch(url);
+        const encoded = encodeURIComponent(categoryName.trim());
+        const url = `${API_BASE}/${encoded}/templates`;
 
-        if (response.ok) {
-          const data = await response.json();
-          setTemplates(data);
-          setDisplayName(categoryName);
-        } else {
-          console.warn(`Primary endpoint failed, falling back...`);
-          const allResponse = await fetch(`${API_BASE}/with-templates`);
-          if (!allResponse.ok) throw new Error("Failed to fetch categories");
-          const categories = await allResponse.json();
-          const found = categories.find(c => c.name.toLowerCase() === categoryName.toLowerCase());
-          if (!found) throw new Error("Category not found");
+        // 1) Try primary endpoint
+        const res = await fetch(url);
+
+        if (res.ok) {
+          const data = await res.json();
+
+          if (isMounted) {
+            setTemplates(data || []);
+            setDisplayName(categoryName);
+          }
+          return;
+        }
+
+        // 2) Fallback: fetch list of categories with templates
+        console.warn("Primary endpoint failed → Fallback used");
+
+        const fallbackRes = await fetch(`${API_BASE}/with-templates`);
+        if (!fallbackRes.ok) throw new Error("Failed to fetch categories");
+
+        const categories = await fallbackRes.json();
+        const found = categories.find(
+          (c) => c.name.toLowerCase() === categoryName.toLowerCase()
+        );
+
+        if (!found) throw new Error("Category not found");
+
+        if (isMounted) {
           setTemplates(found.templates || []);
           setDisplayName(found.name);
         }
       } catch (err) {
-        setError(err.message || "Failed to load templates");
+        if (isMounted) setError(err.message || "Failed to load templates");
       } finally {
-        setLoading(false);
+        if (isMounted) setLoading(false);
       }
     };
 
     fetchTemplates();
+
+    return () => {
+      isMounted = false;
+    };
   }, [categoryName]);
+
+  // ------------------------------------------------------------------
+  // UI BLOCKS (unchanged)
+  // ------------------------------------------------------------------
 
   if (loading) {
     return (
@@ -119,7 +146,7 @@ export default function Category() {
                   </Badge>
                 )}
 
-                {/* Image with zoom & overlay */}
+                {/* Image */}
                 <div className="position-relative overflow-hidden">
                   <Card.Img
                     variant="top"
@@ -155,7 +182,7 @@ export default function Category() {
         ))}
       </Row>
 
-      {/* Custom Styles – đẹp lung linh */}
+      {/* Styles */}
       <style jsx>{`
         .card-glow {
           transition: all 0.4s ease;
@@ -183,7 +210,7 @@ export default function Category() {
         }
         .btn-hover-lift:hover {
           transform: translateY(-3px);
-          box-shadow: 0 8px 20px rgba(255, 183, 0, 0.4) !important;
+          box-shadow: 0 8px 20px rgba(255, 183, 0, 0, 0.4) !important;
         }
       `}</style>
     </Container>
