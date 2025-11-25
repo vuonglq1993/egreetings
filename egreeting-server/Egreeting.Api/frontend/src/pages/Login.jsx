@@ -10,6 +10,8 @@ import Form from "react-bootstrap/Form";
 import Button from "react-bootstrap/Button";
 import Card from "react-bootstrap/Card";
 import "../styles/login.css"; 
+import { GoogleLogin } from "@react-oauth/google";
+
 
 const schema = z.object({
   email: z.string().email("Invalid email address"),
@@ -45,6 +47,7 @@ export default function Login() {
       // Lưu token và user info vào localStorage
       localStorage.setItem("token", token);
       localStorage.setItem("user", JSON.stringify(user));
+      window.dispatchEvent(new Event("user-updated"));
 
       alert("Login successful! Welcome back!");
       navigate("/"); // Chuyển hướng sau khi đăng nhập
@@ -122,6 +125,34 @@ export default function Login() {
           >
             {isLoading ? "Signing in..." : "Sign In"}
           </Button>
+          {/* --- GOOGLE LOGIN BUTTON --- */}
+<div className="mt-4 text-center">
+  <GoogleLogin
+    onSuccess={(credentialResponse) => {
+      const token = credentialResponse.credential;
+      // Gửi token này về BE của bạn
+      axios.post(`${import.meta.env.VITE_API_URL}/auth/login-google`, {
+  token: credentialResponse.credential,
+})
+        .then((res) => {
+          const { token, user } = res.data;
+
+          localStorage.setItem("token", token);
+          localStorage.setItem("user", JSON.stringify(user));
+          window.dispatchEvent(new Event("user-updated"));
+
+          alert("Logged in with Google!");
+          navigate("/");
+        })
+        .catch((err) => {
+          alert("Google login failed.");
+        });
+    }}
+    onError={() => {
+      console.log("Google Login Failed");
+    }}
+  />
+</div>
         </Form>
 
         <p className="text-center mt-5 text-white">
