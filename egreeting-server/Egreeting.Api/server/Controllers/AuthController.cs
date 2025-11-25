@@ -3,6 +3,7 @@ using server.Models;
 using server.Services.Interfaces;
 using Microsoft.AspNetCore.Mvc;
 using System.Linq;
+using Google.Apis.Auth;
 
 namespace server.Controllers
 {
@@ -46,6 +47,57 @@ namespace server.Controllers
                 }
             });
         }
+        [HttpPost("login-google")]
+public async Task<IActionResult> LoginWithGoogle([FromBody] GoogleLoginRequest request)
+{
+    try
+    {
+        var payload = await GoogleJsonWebSignature.ValidateAsync(request.Token);
+
+        var email = payload.Email;
+        var fullName = payload.Name;
+
+        // Lấy toàn bộ user qua service
+        var users = await _userService.GetAllWithRelationsAsync();
+        var user = users.FirstOrDefault(u => u.Email == email);
+
+        // Auto-register nếu chưa tồn tại
+        if (user == null)
+        {
+            user = new User
+            {
+                FullName = fullName,
+                Email = email,
+                PasswordHash = "",  // Đăng nhập Google không cần password
+                Role = "User",
+                Status = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _userService.CreateAsync(user);
+        }
+
+        // Tạo token đăng nhập
+        var token = _jwtHelper.GenerateToken(user, 60 * 24); // 24h
+
+        return Ok(new
+        {
+            token,
+            user = new
+            {
+                user.Id,
+                user.FullName,
+                user.Email,
+                user.Role
+            }
+        });
+    }
+    catch
+    {
+        return BadRequest(new { message = "Invalid Google token" });
+    }
+}
+
     }
 
     public class LoginRequest
