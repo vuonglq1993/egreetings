@@ -12,7 +12,6 @@ import Card from "react-bootstrap/Card";
 import "../styles/login.css"; 
 import { GoogleLogin } from "@react-oauth/google";
 
-
 const schema = z.object({
   email: z.string().email("Invalid email address"),
   password: z.string().min(1, "Please enter your password"),
@@ -55,6 +54,43 @@ export default function Login() {
       setError("root", {
         message: err.response?.data?.message || "Invalid email or password",
       });
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleGoogleSuccess = async (credentialResponse) => {
+    // credentialResponse.credential là Google ID token (ko phải token app)
+    const googleIdToken = credentialResponse?.credential;
+    if (!googleIdToken) {
+      alert("Google login failed: no credential returned.");
+      return;
+    }
+
+    setIsLoading(true);
+    try {
+      // Gửi Google ID token cho BE, BE sẽ validate và trả về token app + user
+      const res = await axios.post(
+        `${import.meta.env.VITE_API_URL}/auth/login-google`,
+        { token: googleIdToken }
+      );
+
+      // Đặt tên rõ ràng để tránh nhầm lẫn
+      const { token: appToken, user } = res.data;
+
+      if (!appToken) {
+        throw new Error("No token received from server");
+      }
+
+      localStorage.setItem("token", appToken);
+      localStorage.setItem("user", JSON.stringify(user));
+      window.dispatchEvent(new Event("user-updated"));
+
+      alert("Logged in with Google!");
+      navigate("/");
+    } catch (err) {
+      console.error("Google login error:", err);
+      alert(err.response?.data?.message || "Google login failed.");
     } finally {
       setIsLoading(false);
     }
@@ -125,34 +161,17 @@ export default function Login() {
           >
             {isLoading ? "Signing in..." : "Sign In"}
           </Button>
+
           {/* --- GOOGLE LOGIN BUTTON --- */}
-<div className="mt-4 text-center">
-  <GoogleLogin
-    onSuccess={(credentialResponse) => {
-      const token = credentialResponse.credential;
-      // Gửi token này về BE của bạn
-      axios.post(`${import.meta.env.VITE_API_URL}/auth/login-google`, {
-  token: credentialResponse.credential,
-})
-        .then((res) => {
-          const { token, user } = res.data;
-
-          localStorage.setItem("token", token);
-          localStorage.setItem("user", JSON.stringify(user));
-          window.dispatchEvent(new Event("user-updated"));
-
-          alert("Logged in with Google!");
-          navigate("/");
-        })
-        .catch((err) => {
-          alert("Google login failed.");
-        });
-    }}
-    onError={() => {
-      console.log("Google Login Failed");
-    }}
-  />
-</div>
+          <div className="mt-4 text-center">
+            <GoogleLogin
+              onSuccess={handleGoogleSuccess}
+              onError={() => {
+                console.log("Google Login Failed");
+                alert("Google login failed.");
+              }}
+            />
+          </div>
         </Form>
 
         <p className="text-center mt-5 text-white">

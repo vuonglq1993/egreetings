@@ -83,6 +83,8 @@ builder.Services.AddScoped<ISubscriptionRecipientService, SubscriptionRecipientS
 builder.Services.AddScoped<ITemplateService, TemplateService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 
+builder.Services.AddScoped<IPayPalService, PayPalService>();
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;

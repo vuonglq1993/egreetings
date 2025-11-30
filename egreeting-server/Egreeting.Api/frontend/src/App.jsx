@@ -20,6 +20,7 @@ import ForgotPassword from "./pages/ForgotPassword";
 import VerifyOTP from "./pages/VerifyOTP";
 import ResetPassword from "./pages/ResetPassword";
 import Profile from "./pages/Profile";
+import PaymentSuccess from "./pages/payment-success";
 
 // Optional: future flags để tránh warning v7
 const futureFlags = {
@@ -52,6 +53,7 @@ export default function App() {
               {/* Template edit/send */}
               <Route path="/edit/:id" element={<EditCard />} />
               <Route path="/send/:id" element={<SendCard />} />
+              <Route path="/payment-success" element={<PaymentSuccess />} />
 
               {/* Subscribe / Feedback */}
               <Route path="/subscribe" element={<Subscribe />} />
