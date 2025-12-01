@@ -1,7 +1,6 @@
 using Microsoft.AspNetCore.Mvc;
 using server.Models;
 using server.Services.Interfaces;
-using server.DTOs;
 
 namespace server.Controllers
 {
@@ -10,44 +9,47 @@ namespace server.Controllers
     public class SubscriptionController : BaseController<Subscription>
     {
         private readonly ISubscriptionService _subscriptionService;
+        private readonly EGreetingDbContext _db;
+        private readonly IEmailService _emailService;
 
-        public SubscriptionController(ISubscriptionService subscriptionService) : base(subscriptionService)
+        public SubscriptionController(
+            ISubscriptionService subscriptionService,
+            EGreetingDbContext db,
+            IEmailService emailService
+        ) : base(subscriptionService)
         {
             _subscriptionService = subscriptionService;
+            _db = db;
+            _emailService = emailService;
         }
 
-        // GET: api/subscription/with-relations
-        [HttpGet("with-relations")]
-        public async Task<IActionResult> GetAllWithRelations()
+        [HttpPost("send")]
+        public async Task<IActionResult> SendSubscription([FromBody] SendECardDto dto)
         {
-            var data = await _subscriptionService.GetAllWithRelationsAsync();
-            return Ok(data);
-        }
+            if (dto.RecipientEmails == null || dto.RecipientEmails.Count == 0)
+                return BadRequest("No recipient emails provided.");
 
-        // GET: api/subscription/5/with-relations
-        [HttpGet("{id}/with-relations")]
-        public async Task<IActionResult> GetByIdWithRelations(int id)
-        {
-            var data = await _subscriptionService.GetByIdWithRelationsAsync(id);
-            if (data == null) return NotFound();
-            return Ok(data);
-        }
-        [HttpPost("create")] 
-        public async Task<IActionResult> Create([FromBody] CreateSubscriptionDto dto)
-        {
-            var subscription = new Subscription
+            // Lấy template từ DB
+            var template = await _db.Templates.FindAsync(dto.TemplateId);
+            if (template == null) return NotFound("Template not found");
+
+            foreach (var email in dto.RecipientEmails)
             {
-                UserId = dto.UserId,
-                PackageId = dto.PackageId,           
-                StartDate = dto.StartDate,
-                EndDate = dto.EndDate,
-                PaymentStatus = dto.PaymentStatus ?? "Pending",
-                CreatedAt = DateTime.UtcNow,
-                IsActive = true
-            };
+                await _emailService.SendEmailAsync(
+                    email,
+                    $"Your Daily E-Card: {template.Title}",
+                    $"<h3>Here is your e-card!</h3>",
+                    template.ImageUrl // Lấy ảnh trực tiếp từ template
+                );
+            }
 
-            await _subscriptionService.CreateAsync(subscription);
-            return Ok(subscription);
+            return Ok(new { message = "Emails sent successfully" });
         }
+    }
+
+    public class SendECardDto
+    {
+        public int TemplateId { get; set; }
+        public List<string> RecipientEmails { get; set; } = new List<string>();
     }
 }

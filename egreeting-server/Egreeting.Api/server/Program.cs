@@ -84,6 +84,9 @@ builder.Services.AddScoped<ITemplateService, TemplateService>();
 builder.Services.AddScoped<ITransactionService, TransactionService>();
 
 builder.Services.AddScoped<IPayPalService, PayPalService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddHttpClient();
+
 
 builder.Services.AddAuthentication(options =>
 {

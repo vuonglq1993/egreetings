@@ -1,4 +1,3 @@
-using System.Linq.Expressions;
 using Microsoft.EntityFrameworkCore;
 using server.Models;
 using server.Repositories.Interfaces;
@@ -27,6 +26,18 @@ namespace server.Repositories.Implementations
                 .Include(s => s.SubscriptionRecipients)
                 .AsNoTracking()
                 .FirstOrDefaultAsync(s => s.Id == id);
+        }
+
+        public async Task<Subscription?> GetActiveSubscriptionForUserAsync(int userId)
+        {
+            return await _dbSet
+                .Include(s => s.User)
+                .Include(s => s.Package)
+                .Include(s => s.SubscriptionRecipients)
+                .Where(s => s.UserId == userId)
+                .OrderByDescending(s => s.StartDate)
+                .AsNoTracking()
+                .FirstOrDefaultAsync();
         }
     }
 }

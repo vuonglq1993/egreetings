@@ -158,6 +158,13 @@ export default function Header() {
             </Nav.Link>
             <Nav.Link
               as={Link}
+              to="/packages"
+              className={`nav-link ${isActive("/packages") ? "active" : ""}`}
+            >
+              PACKAGES
+            </Nav.Link> 
+            <Nav.Link
+              as={Link}
               to="/feedback"
               className={`nav-link ${isActive("/feedback") ? "active" : ""}`}
             >
@@ -204,7 +211,7 @@ export default function Header() {
                 <NavDropdown.Item as={Link} to="/profile">
                   Profile
                 </NavDropdown.Item>
-                <NavDropdown.Item as={Link} to="/my-subscriptions">
+                <NavDropdown.Item as={Link} to="/my-subscription">
                   My Subscriptions
                 </NavDropdown.Item>
                 <NavDropdown.Divider />

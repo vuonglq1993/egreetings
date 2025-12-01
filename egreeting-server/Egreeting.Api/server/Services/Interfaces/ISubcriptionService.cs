@@ -6,5 +6,6 @@ namespace server.Services.Interfaces
     {
         Task<IEnumerable<Subscription>> GetAllWithRelationsAsync();
         Task<Subscription?> GetByIdWithRelationsAsync(int id);
+        Task<Subscription?> GetActiveSubscriptionForUserAsync(int userId);
     }
 }

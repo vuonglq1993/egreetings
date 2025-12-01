@@ -13,12 +13,13 @@ namespace server.Services.Implementations
             _subscriptionRepository = subscriptionRepository;
         }
 
-        // Lấy tất cả subscription kèm quan hệ
         public async Task<IEnumerable<Subscription>> GetAllWithRelationsAsync()
             => await _subscriptionRepository.GetAllWithRelationsAsync();
 
-        // Lấy subscription theo id kèm quan hệ
         public async Task<Subscription?> GetByIdWithRelationsAsync(int id)
             => await _subscriptionRepository.GetByIdWithRelationsAsync(id);
+
+        public async Task<Subscription?> GetActiveSubscriptionForUserAsync(int userId)
+            => await _subscriptionRepository.GetActiveSubscriptionForUserAsync(userId);
     }
 }

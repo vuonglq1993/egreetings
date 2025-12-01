@@ -35,4 +35,9 @@ namespace server.DTOs
 
         public string? PaymentStatus { get; set; } = "Pending";
     }
+    public class SendECardDto   
+{
+    public int TemplateId { get; set; }
+    public List<string> RecipientEmails { get; set; } = new List<string>();
+}
 }

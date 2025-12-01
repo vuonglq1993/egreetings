@@ -7,41 +7,71 @@ export default function PaymentSuccess() {
     useEffect(() => {
         const url = new URL(window.location.href);
 
-        const paymentId = url.searchParams.get("paymentId"); // PayPal paymentId
-        const templateId = parseInt(url.searchParams.get("templateId") || "0"); // templateId
+        // Template flow
+        const paymentId = url.searchParams.get("paymentId");
+        const templateId = parseInt(url.searchParams.get("templateId") || "0");
 
-        if (!paymentId || !templateId) {
-            alert("Payment ID or Template ID missing.");
+        // Package flow
+        const packagePaymentId = url.searchParams.get("paymentId");
+        const packageId = parseInt(url.searchParams.get("packageId") || "0");
+
+        const token = localStorage.getItem("token");
+
+        if (!paymentId && !packagePaymentId) {
+            alert("Missing payment ID.");
             return;
         }
 
-        const token = localStorage.getItem("token"); // JWT token đã lưu
+        // ============================
+        // TEMPLATE PAYMENT EXECUTION
+        // ============================
+        if (templateId && paymentId) {
+            axios.post(
+                `${import.meta.env.VITE_API_URL}/paypal/execute`,
+                {
+                    paymentId,
+                    templateId,
+                    recipientEmail: "",
+                    subject: "",
+                    message: ""
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            )
+            .then(() => {
+                localStorage.setItem("paid", "true");
+                window.location.href = `/edit/${templateId}`;
+            })
+            .catch(err => {
+                console.error("Payment execution failed:", err.response?.data || err);
+                alert(err.response?.data?.message || "Payment execution failed.");
+            });
 
-        // Gọi API execute payment
-        axios.post(
-            `${import.meta.env.VITE_API_URL}/paypal/execute`,
-            {
-                paymentId,
-                templateId,
-                recipientEmail: "", 
-                subject: "",
-                message: ""
-            },
-            {
-                headers: { Authorization: `Bearer ${token}` }
-            }
-        )
-        .then(() => {
-            localStorage.setItem("paid", "true");
-            // Redirect về trang edit trước đó
-            window.location.href = `/edit/${templateId}`; 
-        })
-        .catch(err => {
-            console.error("Payment execution failed:", err.response?.data || err);
-            alert(err.response?.data?.message || "Payment execution failed.");
-        });
+            return;
+        }
+
+        // ============================
+        // PACKAGE PAYMENT EXECUTION
+        // ============================
+        if (packageId && packagePaymentId) {
+            axios.post(
+                `${import.meta.env.VITE_API_URL}/paypal/execute-package`,
+                {
+                    paymentId: packagePaymentId,
+                    packageId
+                },
+                { headers: { Authorization: `Bearer ${token}` } }
+            )
+            .then(() => {
+                alert("Subscription activated!");
+                window.location.href = "/my-subscription";
+            })
+            .catch(err => {
+                console.error("Subscription payment failed:", err.response?.data || err);
+                alert(err.response?.data?.message || "Payment execution failed.");
+            });
+        }
 
     }, []);
 
-    return null; // không hiển thị gì cả, redirect ngay
+    return null;
 }
