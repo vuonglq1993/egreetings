@@ -1,0 +1,244 @@
+<!-- pages/users.html -->
+<!DOCTYPE html>
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Users Management</title>
+
+    <link href="../src/css/style.css" rel="stylesheet">
+    <link href="../src/css/sidebar.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+</head>
+<!-- users.html -->
+
+<body>
+    <!-- Sidebar & Topbar container -->
+    <div id="sidebar-container"></div>
+    <div id="topbar-container"></div>
+    <script type="module">
+        import { loadAdminLayout } from "../src/js/admin-layout.js";
+        loadAdminLayout();
+    </script>
+
+
+    <!-- Main content -->
+    <main class="content">
+        <div class="container mt-4">
+            <div class="d-flex justify-content-between align-items-center mb-3">
+                <h2>Quản lý Users</h2>
+                <button class="btn btn-primary" onclick="openAddModal()">
+                    <i class="bi bi-plus-circle"></i> Thêm User
+                </button>
+            </div>
+            <table class="table table-striped mt-3">
+                <thead>
+                    <tr>
+                        <th>#</th>
+                        <th>ID</th>
+                        <th>FullName</th>
+                        <th>Email</th>
+                        <th>Role</th>
+                        <th>Status</th>
+                        <th>CreatedAt</th>
+                        <th>Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="userTableBody"></tbody>
+            </table>
+        </div>
+    </main>
+
+    <!-- Edit/Add User Modal -->
+    <div class="modal fade" id="userModal" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="userModalTitle">Chỉnh sửa User</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="userForm">
+                        <input type="hidden" id="userId">
+                        <div class="mb-3">
+                            <label class="form-label">Full Name</label>
+                            <input type="text" class="form-control" id="userFullName" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Email</label>
+                            <input type="email" class="form-control" id="userEmail" required>
+                        </div>
+                        <div class="mb-3">
+                            <label class="form-label">Role</label>
+                            <select class="form-select" id="userRole" required>
+                                <option value="User">User</option>
+                                <option value="Admin">Admin</option>
+                            </select>
+                        </div>
+                        <div class="mb-3">
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" id="userStatus">
+                                <label class="form-check-label" for="userStatus">
+                                    Active
+                                </label>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Hủy</button>
+                    <button type="button" class="btn btn-primary" onclick="saveUser()">Lưu</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Load Admin Layout (sidebar + topbar) -->
+    <script src="../src/js/admin-layout.js"></script>
+
+    <!-- Load users từ API -->
+    <script type="module">
+        import { apiGet, apiPut, apiDelete, apiPost } from "../src/js/api.js";
+
+        window.apiGet = apiGet;
+        window.apiPut = apiPut;
+        window.apiDelete = apiDelete;
+        window.apiPost = apiPost;
+
+        async function loadUsers() {
+            try {
+                const data = await apiGet("api/users/with-relations");
+                const tbody = document.getElementById("userTableBody");
+                tbody.innerHTML = "";
+
+                if (!data || data.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="8" class="text-center">Không có dữ liệu</td></tr>`;
+                    return;
+                }
+
+                data.forEach((u, i) => {
+                    tbody.innerHTML += `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${u.id}</td>
+                    <td>${u.fullName || ""}</td>
+                    <td>${u.email || ""}</td> 
+                    <td><span class="badge bg-${u.role === "Admin" ? "danger" : "primary"}">${u.role || "User"}</span></td>
+                    <td><span class="badge bg-${u.status ? "success" : "secondary"}">${u.status ? "Active" : "Inactive"}</span></td>
+                    <td>${u.createdAt ? new Date(u.createdAt).toLocaleString("vi-VN") : ""}</td>
+                    <td>
+                        <button class="btn btn-sm btn-primary" onclick="openEditModal(${u.id}, '${(u.fullName || "").replace(/'/g, "\\'")}', '${(u.email || "").replace(/'/g, "\\'")}', '${u.role || "User"}', ${u.status})">
+                            <i class="bi bi-pencil"></i> Edit
+                        </button>
+                        <button class="btn btn-sm btn-danger" onclick="deleteUser(${u.id})">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+            `;
+                });
+            } catch (err) {
+                console.error("Error loading users:", err);
+                document.getElementById("userTableBody").innerHTML = 
+                    `<tr><td colspan="8" class="text-center text-danger">Lỗi khi tải dữ liệu: ${err.message}</td></tr>`;
+            }
+        }
+
+        window.loadUsers = loadUsers;
+        loadUsers();
+    </script>
+
+    <script>
+        let userModal;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            userModal = new bootstrap.Modal(document.getElementById("userModal"));
+        });
+
+        function openAddModal() {
+            document.getElementById("userModalTitle").textContent = "Thêm User mới";
+            document.getElementById("userForm").reset();
+            document.getElementById("userId").value = "";
+            document.getElementById("userStatus").checked = true;
+            userModal.show();
+        }
+
+        async function openEditModal(id, fullName, email, role, status) {
+            document.getElementById("userModalTitle").textContent = "Chỉnh sửa User";
+            document.getElementById("userId").value = id;
+            document.getElementById("userFullName").value = fullName;
+            document.getElementById("userEmail").value = email;
+            document.getElementById("userRole").value = role;
+            document.getElementById("userStatus").checked = status;
+            userModal.show();
+        }
+
+        async function saveUser() {
+            const id = document.getElementById("userId").value;
+            const fullName = document.getElementById("userFullName").value;
+            const email = document.getElementById("userEmail").value;
+            const role = document.getElementById("userRole").value;
+            const status = document.getElementById("userStatus").checked;
+
+            if (!fullName || !email) {
+                alert("Vui lòng điền đầy đủ thông tin!");
+                return;
+            }
+
+            try {
+                const userData = {
+                    id: id ? parseInt(id) : 0,
+                    fullName: fullName,
+                    email: email,
+                    role: role,
+                    status: status,
+                    passwordHash: "temp" // Sẽ được bỏ qua trong backend
+                };
+
+                if (id) {
+                    // Update
+                    await window.apiPut(`api/users/${id}`, userData);
+                    alert("Cập nhật user thành công!");
+                } else {
+                    // Create - cần password
+                    const password = prompt("Nhập mật khẩu cho user mới:");
+                    if (!password) {
+                        alert("Mật khẩu là bắt buộc!");
+                        return;
+                    }
+                    userData.passwordHash = password;
+                    await window.apiPost("api/users", userData);
+                    alert("Thêm user thành công!");
+                }
+
+                userModal.hide();
+                window.loadUsers();
+            } catch (err) {
+                console.error("Error saving user:", err);
+                alert("Lỗi: " + (err.message || "Không thể lưu user"));
+            }
+        }
+
+        async function deleteUser(id) {
+            if (!confirm("Bạn có chắc chắn muốn xóa user này không?")) return;
+
+            try {
+                await window.apiDelete(`api/users/${id}/delete`);
+                alert("Xóa user thành công!");
+                window.loadUsers();
+            } catch (err) {
+                console.error("Error deleting user:", err);
+                alert("Lỗi: " + (err.message || "Không thể xóa user"));
+            }
+        }
+    </script>
+
+    <!-- Security + Logout -->
+    <script src="../src/js/logout.js"></script>
+    <script src="../src/js/protect-page.js"></script>
+</body>
+
+</html>

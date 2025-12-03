@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+
+<html lang="vi">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Settings</title>
+
+
+<!-- Bootstrap 5 + Icons -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+
+<!-- Custom CSS -->
+<link href="../src/css/style.css" rel="stylesheet">
+<link href="../src/css/sidebar.css" rel="stylesheet">
+
+
+</head>
+
+<body>
+
+
+<!-- Sidebar và Topbar sẽ được load tự động -->
+<div id="sidebar-container"></div>
+<div id="topbar-container"></div>
+
+<!-- Main Content -->
+<main class="content">
+    <div class="container mt-4">
+        <h2>Settings</h2>
+        <div class="row mt-4">
+            <div class="col-md-6">
+                <div class="card shadow-sm p-3 mb-3">
+                    <h5>Thông tin admin</h5>
+                    <form id="adminInfoForm">
+                        <div class="mb-3">
+                            <label for="adminName" class="form-label">Tên Admin</label>
+                            <input type="text" class="form-control" id="adminName" placeholder="Tên Admin">
+                        </div>
+                        <div class="mb-3">
+                            <label for="adminEmail" class="form-label">Email</label>
+                            <input type="email" class="form-control" id="adminEmail" placeholder="admin@example.com">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Cập nhật</button>
+                    </form>
+                </div>
+
+                <div class="card shadow-sm p-3 mb-3">
+                    <h5>Đổi mật khẩu</h5>
+                    <form id="changePasswordForm">
+                        <div class="mb-3">
+                            <label for="currentPassword" class="form-label">Mật khẩu hiện tại</label>
+                            <input type="password" class="form-control" id="currentPassword">
+                        </div>
+                        <div class="mb-3">
+                            <label for="newPassword" class="form-label">Mật khẩu mới</label>
+                            <input type="password" class="form-control" id="newPassword">
+                        </div>
+                        <div class="mb-3">
+                            <label for="confirmPassword" class="form-label">Xác nhận mật khẩu</label>
+                            <input type="password" class="form-control" id="confirmPassword">
+                        </div>
+                        <button type="submit" class="btn btn-success">Đổi mật khẩu</button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="card shadow-sm p-3 mb-3">
+                    <h5>Cấu hình hệ thống</h5>
+                    <form id="systemConfigForm">
+                        <div class="mb-3">
+                            <label for="siteName" class="form-label">Tên website</label>
+                            <input type="text" class="form-control" id="siteName" placeholder="E-Greeting">
+                        </div>
+                        <div class="mb-3">
+                            <label for="supportEmail" class="form-label">Email hỗ trợ</label>
+                            <input type="email" class="form-control" id="supportEmail" placeholder="support@example.com">
+                        </div>
+                        <button type="submit" class="btn btn-primary">Cập nhật cấu hình</button>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+</main>
+
+<!-- Load layout (sidebar + topbar) -->
+<script type="module">
+    import { loadAdminLayout } from "../src/js/admin-layout.js";
+    loadAdminLayout();
+</script>
+
+<!-- Security + Logout -->
+<script src="../src/js/logout.js"></script>
+<script src="../src/js/protect-page.js"></script>
+
+<!-- Script xử lý form -->
+<script type="module">
+    document.getElementById("adminInfoForm").addEventListener("submit", e => {
+        e.preventDefault();
+        alert("Cập nhật thông tin admin thành công (demo).");
+    });
+
+    document.getElementById("changePasswordForm").addEventListener("submit", e => {
+        e.preventDefault();
+        const newPassword = document.getElementById("newPassword").value;
+        const confirmPassword = document.getElementById("confirmPassword").value;
+        if (newPassword !== confirmPassword) {
+            alert("Mật khẩu mới không khớp!");
+            return;
+        }
+        alert("Đổi mật khẩu thành công (demo).");
+    });
+
+    document.getElementById("systemConfigForm").addEventListener("submit", e => {
+        e.preventDefault();
+        alert("Cập nhật cấu hình hệ thống thành công (demo).");
+    });
+</script>
+
+</body>
+
+</html>

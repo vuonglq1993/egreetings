@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Admin Dashboard</title>
+  <!-- Bootstrap CSS -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <!-- Bootstrap Icons -->
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet" />
+
+  <style>
+    body {
+      min-height: 100vh;
+      background-color: #f4f6f9;
+      overflow-x: hidden;
+    }
+    .sidebar {
+      width: 250px;
+      position: fixed;
+      top: 0;
+      left: 0;
+      height: 100%;
+      background: #343a40;
+      color: #adb5bd;
+      transition: width 0.3s;
+    }
+    .sidebar .sidebar-header {
+      padding: 1.5rem 1rem;
+      background: #212529;
+      color: #fff;
+      text-align: center;
+    }
+    .sidebar a {
+      color: #adb5bd;
+      display: block;
+      padding: 0.75rem 1rem;
+      text-decoration: none;
+      transition: background 0.2s, color 0.2s;
+    }
+    .sidebar a:hover, .sidebar a.active {
+      background: #495057;
+      color: #fff;
+    }
+    .sidebar .bi {
+      margin-right: 0.75rem;
+    }
+    .content {
+      margin-left: 250px;
+      padding: 2rem 1.5rem;
+      transition: margin-left 0.3s;
+    }
+    .topbar {
+      position: fixed;
+      top: 0;
+      left: 250px;
+      right: 0;
+      height: 56px;
+      background: #fff;
+      border-bottom: 1px solid #dee2e6;
+      display: flex;
+      align-items: center;
+      padding: 0 1.5rem;
+      transition: left 0.3s;
+      z-index: 1000;
+    }
+    .toggle-btn {
+      font-size: 1.25rem;
+      cursor: pointer;
+      margin-right: 1rem;
+      color: #343a40;
+    }
+
+    /* Khi collapsed sidebar */
+    .sidebar.collapsed {
+      width: 80px;
+    }
+    .sidebar.collapsed .bi {
+      margin-right: 0;
+    }
+    .sidebar.collapsed a span {
+      display: none;
+    }
+    .sidebar.collapsed .sidebar-header {
+      text-align: center;
+      padding: 1.5rem 0.5rem;
+    }
+    .content.expanded {
+      margin-left: 80px;
+    }
+    .topbar.expanded {
+      left: 80px;
+    }
+
+    .card-stat {
+      border: none;
+      border-radius: 0.5rem;
+      box-shadow: 0 0.125rem 0.25rem rgba(0,0,0,0.075);
+      transition: transform 0.2s, box-shadow 0.2s;
+    }
+    .card-stat:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 0.25rem 0.5rem rgba(0,0,0,0.1);
+    }
+    .table-responsive {
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    .table thead {
+      position: sticky;
+      top: 0;
+      background-color: #f8f9fa;
+      z-index: 10;
+    }
+    .sidebar {
+    display: flex;
+    flex-direction: column;
+    height: 100vh; 
+}
+
+#logoutBtn {
+    margin-top:50px;
+    align-self: center; 
+    width: 250px;
+}
+
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <nav class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+      ADMIN
+    </div>
+     <a href="../layout/index.html" class="active"><i class="bi bi-speedometer2 me-2"></i> Dashboard</a>
+    <a href="../pages/users.html"><i class="bi bi-people me-2"></i> Users</a>
+    <a href="../pages/categories.html"><i class="bi bi-tags me-2"></i> Categories</a>
+    <a href="../pages/templates.html"><i class="bi bi-card-text me-2"></i> Templates</a>
+    <a href="../pages/transactions.html"><i class="bi bi-cart me-2"></i> Transactions</a>
+    <a href="../pages/packages.html"><i class="bi bi-gift me-2"></i> Packages</a>
+    <a href="../pages/subscriptions.html"><i class="bi bi-people-fill me-2"></i> Subscriptions</a>
+    <a href="../pages/feedbacks.html"><i class="bi bi-chat-left-text me-2"></i> Feedbacks</a>
+    <a href="../pages/reports.html"><i class="bi bi-bar-chart me-2"></i> Reports</a>
+    <a href="../pages/settings.html"><i class="bi bi-gear me-2"></i> Settings</a>
+     <button class="btn btn-danger ms-auto" id="logoutBtn" >Đăng xuất</button>
+  </nav>
+  
+</nav>
+  
+
+  <!-- Topbar -->
+  <header class="topbar" id="topbar">
+    <div class="d-flex align-items-center">
+      <i class="bi bi-list toggle-btn" id="toggleBtn"></i>
+      <h5 class="mb-0">Dashboard</h5>
+    </div>
+    <div class="ms-auto d-flex align-items-center">
+      <span class="me-3 text-muted">Admin</span>
+      <img src="https://i.pravatar.cc/40" class="rounded-circle" alt="Admin Avatar" />
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="content" id="content">
+    <div class="mt-5 pt-4">
+      <div class="row g-4">
+        <div class="col-xl-3 col-md-6">
+          <div class="card card-stat p-3 text-center">
+            <i class="bi bi-card-text fs-2 text-primary mb-2"></i>
+            <h6 class="fw-bold text-uppercase">Templates</h6>
+            <h4 id="templateCount">0</h4>
+          </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+          <div class="card card-stat p-3 text-center">
+            <i class="bi bi-people fs-2 text-success mb-2"></i>
+            <h6 class="fw-bold text-uppercase">Users</h6>
+            <h4 id="userCount">0</h4>
+          </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+          <div class="card card-stat p-3 text-center">
+            <i class="bi bi-cart fs-2 text-warning mb-2"></i>
+            <h6 class="fw-bold text-uppercase">Transactions</h6>
+            <h4 id="transactionCount">0</h4>
+          </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+          <div class="card card-stat p-3 text-center">
+            <i class="bi bi-people-fill fs-2 text-danger mb-2"></i>
+            <h6 class="fw-bold text-uppercase">Subscriptions</h6>
+            <h4 id="subscriptionCount">0</h4>
+          </div>
+        </div>
+      </div>
+      
+      <div class="row g-4 mt-2">
+        <div class="col-xl-3 col-md-6">
+          <div class="card card-stat p-3 text-center">
+            <i class="bi bi-tags fs-2 text-info mb-2"></i>
+            <h6 class="fw-bold text-uppercase">Categories</h6>
+            <h4 id="categoryCount">0</h4>
+          </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+          <div class="card card-stat p-3 text-center">
+            <i class="bi bi-gift fs-2 text-secondary mb-2"></i>
+            <h6 class="fw-bold text-uppercase">Packages</h6>
+            <h4 id="packageCount">0</h4>
+          </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+          <div class="card card-stat p-3 text-center">
+            <i class="bi bi-chat-left-text fs-2 text-success mb-2"></i>
+            <h6 class="fw-bold text-uppercase">Feedbacks</h6>
+            <h4 id="feedbackCount">0</h4>
+          </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+          <div class="card card-stat p-3 text-center">
+            <i class="bi bi-bar-chart fs-2 text-primary mb-2"></i>
+            <h6 class="fw-bold text-uppercase">Reports</h6>
+            <h4 id="reportCount">0</h4>
+          </div>
+        </div>
+      </div>
+
+      <div class="mt-5">
+        <div class="card p-4">
+          <div class="d-flex justify-content-between align-items-center mb-3">
+            <h5 class="fw-bold mb-0">Recent Transactions</h5>
+            <a href="../pages/transactions.html" class="btn btn-sm btn-outline-primary">
+              <i class="bi bi-arrow-right"></i> Xem tất cả
+            </a>
+          </div>
+          <div class="table-responsive">
+            <table class="table table-hover">
+              <thead class="table-light">
+                <tr>
+                  <th>#</th>
+                  <th>ID</th>
+                  <th>User</th>
+                  <th>Template</th>
+                  <th>Recipient Email</th>
+                  <th>Price</th>
+                  <th>Payment Method</th>
+                  <th>Status</th>
+                  <th>Time</th>
+                </tr>
+              </thead>
+              <tbody id="recentTransactionsBody">
+                <tr><td colspan="9" class="text-center">Đang tải...</td></tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+    
+  </main>
+
+  <!-- Bootstrap JS -->
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+  <!-- Script Toggle -->
+  <script>
+    const toggleBtn = document.getElementById('toggleBtn');
+    const sidebar = document.getElementById('sidebar');
+    const content = document.getElementById('content');
+    const topbar = document.getElementById('topbar');
+
+    toggleBtn.addEventListener('click', () => {
+      sidebar.classList.toggle('collapsed');
+      content.classList.toggle('expanded');
+      topbar.classList.toggle('expanded');
+    });
+  </script>
+
+  <!-- Load Dashboard Data -->
+  <script type="module">
+    import { apiGet } from "../src/js/api.js";
+
+    async function loadDashboardCounts() {
+      try {
+        const [users, categories, templates, transactions, packages, subscriptions, feedbacks, reports] = await Promise.all([
+          apiGet("api/users/with-relations").catch(() => []),
+          apiGet("api/category").catch(() => []),
+          apiGet("api/template").catch(() => []),
+          apiGet("api/transaction/with-relations").catch(() => []),
+          apiGet("api/package").catch(() => []),
+          apiGet("api/subscription/with-relations").catch(() => []),
+          apiGet("api/feedback/with-user").catch(() => []),
+          apiGet("api/report").catch(() => [])
+        ]);
+
+        document.getElementById("userCount").textContent = users?.length || 0;
+        document.getElementById("categoryCount").textContent = categories?.length || 0;
+        document.getElementById("templateCount").textContent = templates?.length || 0;
+        document.getElementById("transactionCount").textContent = transactions?.length || 0;
+        document.getElementById("packageCount").textContent = packages?.length || 0;
+        document.getElementById("subscriptionCount").textContent = subscriptions?.length || 0;
+        document.getElementById("feedbackCount").textContent = feedbacks?.length || 0;
+        document.getElementById("reportCount").textContent = reports?.length || 0;
+      } catch (err) {
+        console.error("Error loading dashboard counts:", err);
+      }
+    }
+
+    async function loadRecentTransactions() {
+      try {
+        const transactions = await apiGet("api/transaction/with-relations");
+        const tbody = document.getElementById("recentTransactionsBody");
+        
+        if (!transactions || transactions.length === 0) {
+          tbody.innerHTML = `<tr><td colspan="9" class="text-center">Không có dữ liệu</td></tr>`;
+          return;
+        }
+
+        // Sắp xếp theo thời gian mới nhất (SentAt)
+        const sorted = [...transactions].sort((a, b) => {
+          const dateA = a.sentAt ? new Date(a.sentAt) : new Date(0);
+          const dateB = b.sentAt ? new Date(b.sentAt) : new Date(0);
+          return dateB - dateA; // Mới nhất trước
+        });
+
+        // Lấy 10 giao dịch gần nhất
+        const recent = sorted.slice(0, 10);
+        tbody.innerHTML = "";
+        recent.forEach((t, i) => {
+          const statusColor = t.paymentStatus === "Completed" ? "success" : 
+                             t.paymentStatus === "Pending" ? "warning" : 
+                             t.paymentStatus === "Failed" ? "danger" : "info";
+          
+          tbody.innerHTML += `
+            <tr>
+              <td>${i + 1}</td>
+              <td>${t.id}</td>
+              <td><strong>${t.userName || "N/A"}</strong></td>
+              <td>${t.templateTitle || "N/A"}</td>
+              <td>${t.recipientEmail || "N/A"}</td>
+              <td><strong class="text-primary">${t.price ? t.price.toFixed(2) : "0.00"}</strong></td>
+              <td>${t.paymentMethod || '<span class="text-muted">N/A</span>'}</td>
+              <td><span class="badge bg-${statusColor}">${t.paymentStatus || "Pending"}</span></td>
+              <td>${t.sentAt ? new Date(t.sentAt).toLocaleString("vi-VN") : "N/A"}</td>
+            </tr>
+          `;
+        });
+      } catch (err) {
+        console.error("Error loading recent transactions:", err);
+        document.getElementById("recentTransactionsBody").innerHTML = 
+          `<tr><td colspan="9" class="text-center text-danger">Lỗi khi tải dữ liệu: ${err.message}</td></tr>`;
+      }
+    }
+
+    document.addEventListener("DOMContentLoaded", () => {
+      loadDashboardCounts();
+      loadRecentTransactions();
+    });
+  </script>
+</body>
+</html>

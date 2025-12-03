@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Feedbacks Management</title>
+
+<!-- Bootstrap 5 + Icons -->
+<link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+<link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Custom CSS -->
+<link href="../src/css/style.css" rel="stylesheet">
+<link href="../src/css/sidebar.css" rel="stylesheet">
+</head>
+<body>
+
+<div id="sidebar-container"></div>
+    <div id="topbar-container"></div>
+    <script type="module">
+        import { loadAdminLayout } from "../src/js/admin-layout.js";
+        loadAdminLayout();
+    </script>
+
+<!-- Main Content -->
+<main class="content">
+<div class="container mt-4">
+    <h2>Quản lý Feedbacks</h2>
+    <table class="table table-striped mt-3">
+        <thead>
+            <tr>
+                <th>#</th>
+                <th>ID</th>
+                <th>User</th>
+                <th>User Email</th>
+                <th>Message</th>
+                <th>CreatedAt</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="feedbackTableBody"></tbody>
+    </table>
+</div>
+</main>
+
+<!-- Load layout (sidebar + topbar) -->
+<script src="../src/js/admin-layout.js"></script>
+
+<!-- Feedbacks JS -->
+<script type="module">
+import { apiGet, apiDelete } from "../src/js/api.js";
+
+window.apiGet = apiGet;
+window.apiDelete = apiDelete;
+
+async function loadFeedbacks() {
+    try {
+        const data = await apiGet("api/feedback/with-user");
+        const tbody = document.getElementById("feedbackTableBody");
+        if (!tbody) return console.error("tbody not found");
+
+        tbody.innerHTML = "";
+
+        if (!data || data.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="text-center">Không có dữ liệu</td></tr>`;
+            return;
+        }
+
+        data.forEach((f, i) => {
+            tbody.innerHTML += `
+                <tr>
+                    <td>${i + 1}</td>
+                    <td>${f.id}</td>
+                    <td>${f.user?.fullName || "Guest"}</td>
+                    <td>${f.user?.email || "N/A"}</td>
+                    <td>${f.message || ""}</td>
+                    <td>${f.createdAt ? new Date(f.createdAt).toLocaleString("vi-VN") : ""}</td>
+                    <td>
+                        <button class="btn btn-sm btn-danger" onclick="deleteFeedback(${f.id})">
+                            <i class="bi bi-trash"></i> Delete
+                        </button>
+                    </td>
+                </tr>
+            `;
+        });
+    } catch (err) {
+        console.error("Error loading feedbacks:", err);
+        document.getElementById("feedbackTableBody").innerHTML = 
+            `<tr><td colspan="7" class="text-center text-danger">Lỗi khi tải dữ liệu: ${err.message}</td></tr>`;
+    }
+}
+
+window.loadFeedbacks = loadFeedbacks;
+document.addEventListener("DOMContentLoaded", () => {
+    loadFeedbacks();
+});
+</script>
+
+<script>
+async function deleteFeedback(id) {
+    if (!confirm("Bạn có chắc chắn muốn xóa feedback này không?")) return;
+
+    try {
+        await window.apiDelete(`api/feedback/${id}`);
+        alert("Xóa feedback thành công!");
+        window.loadFeedbacks();
+    } catch (err) {
+        console.error("Error deleting feedback:", err);
+        alert("Lỗi: " + (err.message || "Không thể xóa feedback"));
+    }
+}
+</script>
+
+
+<!-- Security + Logout -->
+<script src="../src/js/logout.js"></script>
+<script src="../src/js/protect-page.js"></script>
+
+</body>
+</html>

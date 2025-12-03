@@ -1,0 +1,129 @@
+# =========================
+# Common ignores for full-stack project
+# Backend (C# ASP.NET Core + EF Core)
+# Frontend (Vite/React)
+# =========================
+
+##############################
+# === Backend (.NET Core) ===
+##############################
+
+## Build results
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+*.log
+*.tlog
+*.tmp
+*.cache
+*.dbmdl
+*.user
+*.suo
+*.userosscache
+*.userprefs
+
+# Visual Studio
+.vs/
+*.vscode/
+
+# Rider / JetBrains
+.idea/
+
+# Test Results
+TestResults/
+*.trx
+*.coverage
+*.coveragexml
+
+# Entity Framework
+Migrations/
+*.db
+*.mdf
+*.ldf
+
+# Secrets / Config
+appsettings.Development.json
+appsettings.Local.json
+appsettings.*.json
+secrets.json
+
+# Publish outputs
+publish/
+dist/
+*.publishsettings
+
+# Packages
+*.nupkg
+*.snupkg
+packages/
+*.dll
+*.pdb
+*.exe
+
+# Temporary files
+*.bak
+*.swp
+*.orig
+*.tmp
+*.cache
+*.log
+*.DS_Store
+
+###################################
+# === Frontend (Vite + React) ===
+###################################
+
+# Dependencies
+node_modules/
+.pnpm-store/
+.npm/
+.yarn/
+.yarn-cache/
+
+# Build outputs
+dist/
+build/
+out/
+coverage/
+
+# Local env files
+.env
+.env.local
+.env.development
+.env.production
+.env.test
+
+# Logs
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Editor / OS junk
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+
+###################################
+# === Global ignores (optional) ===
+###################################
+# Ignore uploaded media
+uploads/
+wwwroot/uploads/
+wwwroot/images/
+wwwroot/files/
+
+# Ignore SQLite or Local DB files
+*.sqlite
+*.db
+
+# Ignore SSL dev certs
+*.pfx
+
+# Ignore backups and archives
+*.zip
+*.rar
+*.7z
+*.tar
+*.gz
