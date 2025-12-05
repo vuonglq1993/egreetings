@@ -5,41 +5,30 @@ using server.Services.Interfaces;
 namespace server.Controllers
 {
     [Route("api/[controller]")]
-[ApiController]
-public class PackageController : BaseController<Package>
-{
-    private readonly IPackageService _packageService;
-
-    public PackageController(IPackageService packageService) : base(packageService)
+    [ApiController]
+    public class PackageController : BaseController<Package>
     {
-        _packageService = packageService;
-    }
+        private readonly IPackageService _packageService;
 
-    [HttpGet("with-relations")]
-    public async Task<IActionResult> GetAllWithRelations()
-    {
-        var packages = await _packageService.GetAllWithRelationsAsync();
-
-        // Chỉ chọn những trường cần gửi về frontend
-        var result = packages.Select(p => new
+        public PackageController(IPackageService packageService) : base(packageService)
         {
-            p.Id,
-            p.Name,
-            p.DurationMonths,
-            p.Price,
-            p.IsActive
-        });
+            _packageService = packageService;
+        }
 
-        return Ok(result);
+        [HttpGet("with-relations")]
+        public async Task<IActionResult> GetAllWithRelations()
+        {
+            var data = await _packageService.GetAllWithRelationsAsync();
+            return Ok(data);
+        }
+
+        [HttpGet("{id}/with-relations")]
+        public async Task<IActionResult> GetByIdWithRelations(int id)
+        {
+            var data = await _packageService.GetByIdWithRelationsAsync(id);
+            if (data == null) return NotFound();
+            return Ok(data);
+        }
+        
     }
-
-    [HttpGet("{id}/with-relations")]
-    public async Task<IActionResult> GetByIdWithRelations(int id)
-    {
-        var package = await _packageService.GetByIdWithRelationsAsync(id);
-        if (package == null) return NotFound();
-        return Ok(package);
-    }
-}
-
 }

@@ -1,5 +1,4 @@
 using server.Models;
-using BCrypt.Net;
 
 namespace server.Services.Interfaces
 {
@@ -7,9 +6,9 @@ namespace server.Services.Interfaces
     {
         Task<IEnumerable<User>> GetAllWithRelationsAsync();
         Task<User?> GetByIdWithRelationsAsync(int id);
-        Task<bool> CheckEmailExistsAsync(string email); 
+        Task<bool> CheckEmailExistsAsync(string email); // NEW
         Task UpdatePasswordAsync(int userId, string newPassword);
-        Task<User?> GetByEmailAsync(string email);
-        
+
+
     }
 }

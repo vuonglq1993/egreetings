@@ -1,6 +1,3 @@
-using System.Collections.Generic;
-using System.Linq;
-using System.Threading.Tasks;
 using server.Models;
 using server.Repositories.Interfaces;
 using server.Services.Interfaces;
@@ -47,33 +44,23 @@ namespace server.Services.Implementations
         }
 
         public async Task<IEnumerable<User>> GetAllWithRelationsAsync()
-        {
-            return await _userRepository.GetAllWithRelationsAsync();
-        }
+            => await _userRepository.GetAllWithRelationsAsync();
 
         public async Task<User?> GetByIdWithRelationsAsync(int id)
+            => await _userRepository.GetByIdWithRelationsAsync(id);
+
+        public async Task<bool> VerifyPasswordAsync(string email, string plainPassword)
         {
-            return await _userRepository.GetByIdWithRelationsAsync(id);
+            var allUsers = await _userRepository.GetAllAsync(u => u.Email == email);
+            var user = allUsers.FirstOrDefault();
+            if (user == null) return false;
+
+            return BCrypt.Net.BCrypt.Verify(plainPassword, user.PasswordHash);
         }
 
         public async Task<bool> CheckEmailExistsAsync(string email)
         {
             return await _userRepository.CheckEmailExistsAsync(email);
         }
-
-        public async Task<User?> GetByEmailAsync(string email)
-        {
-            return await _userRepository.GetByEmailAsync(email);
-        }
-        public async Task DeleteAsync(int id)
-{
-    var user = await GetByIdAsync(id); // gọi method từ BaseService
-    if (user == null)
-        throw new Exception("User not found");
-
-    await base.DeleteAsync(id); // gọi BaseService xóa thực tế
-}
-
-
     }
 }

@@ -24,9 +24,15 @@ namespace server.Middleware
             {
                 var principal = jwtHelper.ValidateToken(token);
                 if (principal != null)
-                {
-                    context.User = principal;
-                }
+{
+    context.User = principal;
+
+    var userIdClaim = principal.Claims.FirstOrDefault(x => x.Type == "id")?.Value;
+    if (userIdClaim != null)
+    {
+        context.Items["UserId"] = int.Parse(userIdClaim);
+    }
+}
             }
 
             await _next(context);

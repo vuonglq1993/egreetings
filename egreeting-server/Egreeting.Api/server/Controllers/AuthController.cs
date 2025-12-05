@@ -1,9 +1,9 @@
-using Microsoft.AspNetCore.Mvc;
 using server.Helpers;
 using server.Models;
 using server.Services.Interfaces;
+using Microsoft.AspNetCore.Mvc;
 using System.Linq;
-using BCrypt.Net;
+using Google.Apis.Auth;
 
 namespace server.Controllers
 {
@@ -23,25 +23,21 @@ namespace server.Controllers
         [HttpPost("login")]
         public async Task<IActionResult> Login([FromBody] LoginRequest request)
         {
-            // Lấy user theo email
-            var user = await _userService.GetByEmailAsync(request.Email);
+            var users = await _userService.GetAllWithRelationsAsync();
+            var user = users.FirstOrDefault(u => u.Email == request.Email);
 
             if (user == null)
                 return Unauthorized(new { message = "Invalid email or password" });
 
-            // Kiểm tra password
             var validPassword = BCrypt.Net.BCrypt.Verify(request.Password, user.PasswordHash);
             if (!validPassword)
                 return Unauthorized(new { message = "Invalid email or password" });
 
-            // Tạo JWT token
-            var token = _jwtHelper.GenerateToken(user, 60 * 24); // 24h
+            var token = _jwtHelper.GenerateToken(user, 60 * 24);
 
-            // Trả về JSON đầy đủ
             return Ok(new
             {
                 token,
-                role = user.Role, // cần frontend lưu role
                 user = new
                 {
                     user.Id,
@@ -51,9 +47,59 @@ namespace server.Controllers
                 }
             });
         }
+        [HttpPost("login-google")]
+public async Task<IActionResult> LoginWithGoogle([FromBody] GoogleLoginRequest request)
+{
+    try
+    {
+        var payload = await GoogleJsonWebSignature.ValidateAsync(request.Token);
+
+        var email = payload.Email;
+        var fullName = payload.Name;
+
+        // Lấy toàn bộ user qua service
+        var users = await _userService.GetAllWithRelationsAsync();
+        var user = users.FirstOrDefault(u => u.Email == email);
+
+        // Auto-register nếu chưa tồn tại
+        if (user == null)
+        {
+            user = new User
+            {
+                FullName = fullName,
+                Email = email,
+                PasswordHash = "",  // Đăng nhập Google không cần password
+                Role = "User",
+                Status = true,
+                CreatedAt = DateTime.UtcNow
+            };
+
+            await _userService.CreateAsync(user);
+        }
+
+        // Tạo token đăng nhập
+        var token = _jwtHelper.GenerateToken(user, 60 * 24); // 24h
+
+        return Ok(new
+        {
+            token,
+            user = new
+            {
+                user.Id,
+                user.FullName,
+                user.Email,
+                user.Role
+            }
+        });
+    }
+    catch
+    {
+        return BadRequest(new { message = "Invalid Google token" });
+    }
+}
+
     }
 
-    // DTO
     public class LoginRequest
     {
         public string Email { get; set; } = null!;

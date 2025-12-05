@@ -36,27 +36,9 @@ namespace server.Repositories.Implementations
                 .AsNoTracking()
                 .FirstOrDefaultAsync(u => u.Id == id);
         }
-
         public async Task<bool> CheckEmailExistsAsync(string email)
         {
             return await _dbSet.AnyAsync(u => u.Email == email);
         }
-
-        public async Task<User?> GetByEmailAsync(string email)
-        {
-            return await _dbSet
-                .AsNoTracking()
-                .FirstOrDefaultAsync(u => u.Email == email);
-        }
-        public async Task DeleteAsync(int id)
-{
-    var entity = await _dbSet.FindAsync(id);
-    if (entity == null) 
-        throw new Exception("User not found");
-
-    _dbSet.Remove(entity);
-    await _context.SaveChangesAsync();
-}
-
     }
 }

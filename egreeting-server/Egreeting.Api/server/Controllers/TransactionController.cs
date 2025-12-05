@@ -19,28 +19,9 @@ namespace server.Controllers
         [HttpGet("with-relations")]
         public async Task<IActionResult> GetAllWithRelations()
         {
-            var transactions = await _service.GetAllWithRelationsAsync();
-
-            // Map dữ liệu ra JSON mà frontend cần
-            var result = transactions.Select(t => new
-            {
-                t.Id,
-                userId = t.UserId,
-                templateId = t.TemplateId,
-                userName = t.User != null ? t.User.FullName : "",
-                templateTitle = t.Template != null ? t.Template.Title : "",
-                t.RecipientEmail,
-                t.Subject,
-                t.Message,
-                t.Price,
-                t.PaymentMethod,
-                t.PaymentStatus,
-                t.SentAt
-            });
-
-            return Ok(result);
+            var data = await _service.GetAllWithRelationsAsync();
+            return Ok(data);
         }
-
 
         // GET: api/transaction/5/with-relations
         [HttpGet("{id}/with-relations")]

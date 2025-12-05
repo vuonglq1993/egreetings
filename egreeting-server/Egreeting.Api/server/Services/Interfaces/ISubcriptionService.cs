@@ -1,4 +1,5 @@
 using server.Models;
+using server.DTOs;
 
 namespace server.Services.Interfaces
 {
@@ -6,5 +7,7 @@ namespace server.Services.Interfaces
     {
         Task<IEnumerable<Subscription>> GetAllWithRelationsAsync();
         Task<Subscription?> GetByIdWithRelationsAsync(int id);
+        Task<Subscription?> GetActiveSubscriptionForUserAsync(int userId);
+        Task<SubscriptionSummaryDto?> GetUserSubscriptionSummaryAsync(int userId);
     }
 }

@@ -35,4 +35,18 @@ namespace server.DTOs
 
         public string? PaymentStatus { get; set; } = "Pending";
     }
+    public class SendECardDto   
+{
+    public int TemplateId { get; set; }
+    public List<string> RecipientEmails { get; set; } = new List<string>();
+}
+public class SubscriptionSummaryDto
+{
+    public string PackageName { get; set; } = string.Empty;
+    public DateOnly StartDate { get; set; }
+    public DateOnly EndDate { get; set; }
+    public int TotalDays { get; set; }
+    public decimal TotalPrice { get; set; }
+    public bool IsExpired { get; set; }
+}
 }

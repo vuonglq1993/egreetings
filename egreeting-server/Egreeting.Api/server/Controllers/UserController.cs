@@ -3,23 +3,20 @@ using server.Models;
 using server.Services.Interfaces;
 using Microsoft.AspNetCore.Authorization;
 using server.DTOs;
-using BCrypt.Net;
-using System;
 
 namespace server.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class UsersController : ControllerBase
+    public class UsersController : BaseController<User>
     {
         private readonly IUserService _userService;
 
-        public UsersController(IUserService userService)
+        public UsersController(IUserService userService) : base(userService)
         {
             _userService = userService;
         }
 
-        // GET: api/users/with-relations
         [HttpGet("with-relations")]
         public async Task<IActionResult> GetAllWithRelations()
         {
@@ -27,7 +24,6 @@ namespace server.Controllers
             return Ok(data);
         }
 
-        // GET: api/users/{id}/with-relations
         [HttpGet("{id}/with-relations")]
         public async Task<IActionResult> GetByIdWithRelations(int id)
         {
@@ -35,8 +31,6 @@ namespace server.Controllers
             if (data == null) return NotFound();
             return Ok(data);
         }
-
-        // GET: api/users/check-email?email=xxx
         [HttpGet("check-email")]
         public async Task<IActionResult> CheckEmail([FromQuery] string email)
         {
@@ -46,8 +40,6 @@ namespace server.Controllers
             var exists = await _userService.CheckEmailExistsAsync(email);
             return Ok(new { exists });
         }
-
-        // GET: api/users/me
         [HttpGet("me")]
         [Authorize]
         public async Task<IActionResult> GetCurrentUser()
@@ -72,7 +64,6 @@ namespace server.Controllers
             return Ok(dto);
         }
 
-        // PUT: api/users/update-profile
         [HttpPut("update-profile")]
         [Authorize]
         public async Task<IActionResult> UpdateProfile([FromBody] UpdateProfileRequest request)
@@ -87,8 +78,6 @@ namespace server.Controllers
             await _userService.UpdateAsync(user.Id, user);
             return Ok(new { message = "Profile updated successfully" });
         }
-
-        // PUT: api/users/change-password
         [HttpPut("change-password")]
         [Authorize]
         public async Task<IActionResult> ChangePassword([FromBody] ChangePasswordRequest request)
@@ -108,60 +97,5 @@ namespace server.Controllers
             return Ok(new { message = "Password changed successfully!" });
         }
 
-        // PUT: api/users/{id} - Admin update user
-        [HttpPut("{id}")]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> UpdateUser(int id, [FromBody] User userData)
-        {
-            if (userData == null) return BadRequest("Invalid data");
-            
-            var user = await _userService.GetByIdAsync(id);
-            if (user == null) return NotFound(new { message = "User not found" });
-
-            // Cập nhật các trường
-            user.FullName = userData.FullName;
-            user.Email = userData.Email;
-            user.Role = userData.Role;
-            user.Status = userData.Status;
-            // Không cập nhật password từ đây
-
-            await _userService.UpdateAsync(id, user);
-            return NoContent();
-        }
-
-        // POST: api/users - Admin create user
-        [HttpPost]
-        [Authorize(Roles = "Admin")]
-        public async Task<IActionResult> CreateUser([FromBody] User userData)
-        {
-            if (userData == null) return BadRequest("Invalid data");
-            
-            // Tạo user mới
-            var newUser = new User
-            {
-                FullName = userData.FullName,
-                Email = userData.Email,
-                Role = userData.Role ?? "User",
-                Status = userData.Status,
-                PasswordHash = userData.PasswordHash, // Sẽ được hash trong service
-                CreatedAt = DateTime.UtcNow
-            };
-
-            var created = await _userService.CreateAsync(newUser);
-            return Ok(created);
-        }
-
-        // DELETE: api/users/{id}/delete
-        [HttpDelete("{id}/delete")]
-        [Authorize(Roles = "Admin")] // chỉ admin mới xóa được
-        public async Task<IActionResult> DeleteUser(int id)
-        {
-            var user = await _userService.GetByIdAsync(id);
-            if (user == null)
-                return NotFound(new { message = "User not found" });
-
-            await _userService.DeleteAsync(id);
-            return Ok(new { message = "User deleted successfully" });
-        }
     }
 }

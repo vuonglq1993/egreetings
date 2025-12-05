@@ -7,6 +7,7 @@ namespace server.DTOs
         public string? Description { get; set; }
         public decimal Price { get; set; }
         public bool IsActive { get; set; }
+         public int DurationMonths { get; set; } 
         public DateTime CreatedAt { get; set; }
 
         // Optional stats

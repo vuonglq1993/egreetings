@@ -1,7 +1,8 @@
 using Microsoft.EntityFrameworkCore;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.IdentityModel.Tokens;
-using System.Text;
+
+using System.Text; 
 using server.Helpers;
 using server.Models;
 using server.Repositories.Interfaces;
@@ -10,41 +11,50 @@ using server.Services.Interfaces;
 using server.Services.Implementations;
 using server.Middleware;
 using DotNetEnv;
+using server.Repositories;
+using server.Services;
+using System.Text.Json.Serialization;
 
-// Load .env
+// ===== Load .env =====
 DotNetEnv.Env.Load();
 
-// Read config
+// ===== Read configuration from environment =====
 var builder = WebApplication.CreateBuilder(args);
 
+// ----- JWT Config -----
 var jwtKey = Environment.GetEnvironmentVariable("JWT_KEY") ?? throw new ArgumentException("JWT_KEY missing");
-var key = Encoding.UTF8.GetBytes(jwtKey);
+var key = Encoding.UTF8.GetBytes(jwtKey); 
+
 var jwtIssuer = Environment.GetEnvironmentVariable("JWT_ISSUER") ?? "EGreetingAPI";
 var jwtAudience = Environment.GetEnvironmentVariable("JWT_AUDIENCE") ?? "EGreetingClient";
 var jwtDuration = int.TryParse(Environment.GetEnvironmentVariable("JWT_DURATION"), out var minutes) ? minutes : 1440;
 
+// ----- Database -----
 var dbConnection = Environment.GetEnvironmentVariable("EGREETING_DB_CONNECTION") 
                    ?? throw new ArgumentException("EGREETING_DB_CONNECTION missing");
 
+// ----- Allowed origins -----
 var allowedOrigins = Environment.GetEnvironmentVariable("ALLOWED_ORIGINS")?
     .Split(',', StringSplitOptions.RemoveEmptyEntries) ?? Array.Empty<string>();
 
-// Add services
+// ===== Add services =====
+
+
 builder.Services.AddControllers().AddJsonOptions(options =>
 {
-    options.JsonSerializerOptions.ReferenceHandler =
-        System.Text.Json.Serialization.ReferenceHandler.IgnoreCycles;
+    options.JsonSerializerOptions.ReferenceHandler = ReferenceHandler.IgnoreCycles;
+    options.JsonSerializerOptions.WriteIndented = true;
 });
 
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
 
-// DbContext
+// ===== EF Core DbContext =====
 builder.Services.AddDbContext<EGreetingDbContext>(options =>
     options.UseSqlServer(dbConnection)
 );
 
-// CORS
+// ===== CORS =====
 builder.Services.AddCors(options =>
 {
     options.AddPolicy("AllowFrontend", policy =>
@@ -55,31 +65,37 @@ builder.Services.AddCors(options =>
     });
 });
 
-// Repositories
+// ===== Base Repositories & Services (generic) =====
 builder.Services.AddScoped(typeof(IBaseRepository<>), typeof(BaseRepository<>));
+builder.Services.AddScoped(typeof(IBaseService<>), typeof(BaseService<>));
+
+// ===== Specific Repositories =====
 builder.Services.AddScoped<IUserRepository, UserRepository>();
 builder.Services.AddScoped<ICategoryRepository, CategoryRepository>();
-builder.Services.AddScoped<ITemplateRepository, TemplateRepository>();
-builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
+builder.Services.AddScoped<IFeedbackRepository, FeedbackRepository>();
 builder.Services.AddScoped<IPackageRepository, PackageRepository>();
+builder.Services.AddScoped<IReportRepository, ReportRepository>();
 builder.Services.AddScoped<ISubscriptionRepository, SubscriptionRepository>();
 builder.Services.AddScoped<ISubscriptionRecipientRepository, SubscriptionRecipientRepository>();
-builder.Services.AddScoped<IFeedbackRepository, FeedbackRepository>();
-builder.Services.AddScoped<IReportRepository, ReportRepository>();
+builder.Services.AddScoped<ITemplateRepository, TemplateRepository>();
+builder.Services.AddScoped<ITransactionRepository, TransactionRepository>();
 
-// Services
-builder.Services.AddScoped(typeof(IBaseService<>), typeof(BaseService<>));
+// ===== Specific Services =====
 builder.Services.AddScoped<IUserService, UserService>();
 builder.Services.AddScoped<ICategoryService, CategoryService>();
-builder.Services.AddScoped<ITemplateService, TemplateService>();
-builder.Services.AddScoped<ITransactionService, TransactionService>();
+builder.Services.AddScoped<IFeedbackService, FeedbackService>();
 builder.Services.AddScoped<IPackageService, PackageService>();
+builder.Services.AddScoped<IReportService, ReportService>();
 builder.Services.AddScoped<ISubscriptionService, SubscriptionService>();
 builder.Services.AddScoped<ISubscriptionRecipientService, SubscriptionRecipientService>();
-builder.Services.AddScoped<IFeedbackService, FeedbackService>();
-builder.Services.AddScoped<IReportService, ReportService>();
+builder.Services.AddScoped<ITemplateService, TemplateService>();
+builder.Services.AddScoped<ITransactionService, TransactionService>();
 
-// JWT Authentication
+builder.Services.AddScoped<IPayPalService, PayPalService>();
+builder.Services.AddScoped<IEmailService, EmailService>();
+builder.Services.AddHttpClient();
+
+
 builder.Services.AddAuthentication(options =>
 {
     options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -97,16 +113,18 @@ builder.Services.AddAuthentication(options =>
         IssuerSigningKey = new SymmetricSecurityKey(key)
     };
 });
-
-// JWT helper
+// ===== JWT Helper (inject IConfiguration via factory) =====
 builder.Services.AddSingleton<JwtHelper>(sp =>
 {
     return new JwtHelper(new ConfigurationBuilder().AddEnvironmentVariables().Build());
 });
 
+// ===== Build App =====
 var app = builder.Build();
 
-// Middleware
+
+
+// ===== Middleware =====
 if (app.Environment.IsDevelopment())
 {
     app.UseSwagger();
@@ -114,18 +132,18 @@ if (app.Environment.IsDevelopment())
 }
 
 app.UseHttpsRedirection();
-app.UseStaticFiles();
 
-// CORS must be before any auth middleware
+
+// ===== CORS =====
 app.UseCors("AllowFrontend");
-
-// JWT middleware
+// ===== JWT Middleware =====
 app.UseMiddleware<JwtMiddleware>();
-
 app.UseAuthentication();
-app.UseAuthorization();
+app.UseAuthorization();     
 
-// Map controllers
+// ===== Map Controllers =====
 app.MapControllers();
-
+app.UseStaticFiles();
+// ===== Run App =====
 app.Run();
+
