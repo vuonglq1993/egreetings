@@ -1,365 +1,381 @@
-import React, { useRef, useEffect, useState } from "react";
-import { Stage, Layer, Image as KonvaImage, Text, Rect, Transformer } from "react-konva";
-import { Button, Container, Spinner, Alert, Dropdown, Form } from "react-bootstrap";
-import { HexColorPicker } from "react-colorful";
-import { useParams, useNavigate } from "react-router-dom";
+// FILE: src/pages/EditCard.jsx
+// Full version: Export JPG + Save local + Redirect (no upload)
+// + Color Picker for text
+// + Premium sticker collection
+
+import React, { useRef, useEffect, useState, useCallback } from "react";
+import { Stage, Layer, Image as KonvaImage, Text, Rect } from "react-konva";
+import { Button, Container, Spinner, Alert, Dropdown, Form, Modal } from "react-bootstrap";
 import useImage from "use-image";
+import { useParams, useNavigate } from "react-router-dom";
 import axios from "axios";
 import html2canvas from "html2canvas";
+import { HexColorPicker } from "react-colorful";
 
-const API_URL = import.meta.env.VITE_API_URL || "http://localhost:5018/api";
+const API_URL = import.meta.env.VITE_API_URL;
 
-// High-quality sticker list (extendable)
+// NEW: Fancy sticker library
 const STICKERS = [
-    "https://cdn-icons-png.flaticon.com/128/1047/1047549.png",
-    "https://cdn-icons-png.flaticon.com/128/2581/2581901.png",
-    "https://cdn-icons-png.flaticon.com/128/1828/1828887.png",
-    "https://cdn-icons-png.flaticon.com/128/2965/2965358.png",
-    "https://cdn-icons-png.flaticon.com/128/1057/1057080.png",
-    "https://cdn-icons-png.flaticon.com/128/4380/4380589.png",
+  // Cute hearts
+  "https://cdn-icons-png.flaticon.com/512/2589/2589175.png",
+  "https://cdn-icons-png.flaticon.com/512/2107/2107957.png",
+
+  // Balloons
+  "https://cdn-icons-png.flaticon.com/512/869/869869.png",
+  "https://cdn-icons-png.flaticon.com/512/2917/2917995.png",
+
+  // Gift & ribbons
+  "https://cdn-icons-png.flaticon.com/512/2541/2541988.png",
+  "https://cdn-icons-png.flaticon.com/512/2541/2541983.png",
+
+  // Sparkles
+  "https://cdn-icons-png.flaticon.com/512/1828/1828884.png",
+  "https://cdn-icons-png.flaticon.com/512/2107/2107929.png",
+
+  // Flowers
+  "https://cdn-icons-png.flaticon.com/512/869/869869.png",
+  "https://cdn-icons-png.flaticon.com/512/744/744465.png",
+
+  // Fireworks
+  "https://cdn-icons-png.flaticon.com/512/993/993928.png",
+  "https://cdn-icons-png.flaticon.com/512/993/993934.png",
 ];
 
 export default function EditCard() {
-    const { id } = useParams();
-    const navigate = useNavigate();
-    const stageRef = useRef(null);
+  const { id } = useParams();
+  const navigate = useNavigate();
+  const stageRef = useRef(null);
 
-    const [template, setTemplate] = useState(null);
-    const [loading, setLoading] = useState(true);
-    const [texts, setTexts] = useState([]);
-    const [stickers, setStickers] = useState([]);
-    const [backgroundColor, setBackgroundColor] = useState("#ffffff");
-    const [selectedId, setSelectedId] = useState(null);
-    const [showColorPicker, setShowColorPicker] = useState(false);
-    const [textColor, setTextColor] = useState("#ffd700");
-    const [fontSize, setFontSize] = useState(48);
+  const [template, setTemplate] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [selectedId, setSelectedId] = useState(null);
+  const [texts, setTexts] = useState([]);
+  const [stickers, setStickers] = useState([]);
+  const [backgroundColor, setBackgroundColor] = useState("#ffffff");
 
-    // Load template image
-    const [templateImage] = useImage(template?.imageUrl || "", "anonymous");
+  const [textColor, setTextColor] = useState("#ffd700");
+  const [fontSize, setFontSize] = useState(48);
 
-    // Hide color picker when clicking outside
-    useEffect(() => {
-        const handleClickOutside = () => setShowColorPicker(false);
-        document.addEventListener("click", handleClickOutside);
-        return () => document.removeEventListener("click", handleClickOutside);
-    }, []);
+  const [showTextModal, setShowTextModal] = useState(false);
+  const [showColorPicker, setShowColorPicker] = useState(false);
 
-    // Fetch template with relations
-    useEffect(() => {
-        axios
-            .get(`${API_URL}/template/${id}/with-relations`)
-            .then(res => setTemplate(res.data))
-            .catch(() => alert("Failed to load template"))
-            .finally(() => setLoading(false));
-    }, [id]);
+  const [customText, setCustomText] = useState("");
 
-    // Add a new text element to the canvas
-    const addText = () => {
-        const newText = {
-            id: `text-${Date.now()}`,
-            text: "Happy Birthday!",
-            x: 100,
-            y: 100,
-            fontSize,
-            fill: textColor,
-            fontFamily: "Dancing Script",
-            fontStyle: "bold",
-            draggable: true,
-            shadowColor: "black",
-            shadowBlur: 10,
-            shadowOffset: { x: 5, y: 5 },
-            shadowOpacity: 0.6,
-        };
-        setTexts(prev => [...prev, newText]);
-        setSelectedId(newText.id);
+  const [isPaid, setIsPaid] = useState(false);
+  const [processing, setProcessing] = useState(false);
+
+  useEffect(() => {
+    const load = async () => {
+      try {
+        const res = await axios.get(`${API_URL}/template/${id}/with-relations`);
+        setTemplate(res.data);
+      } catch {
+        setTemplate({
+          id,
+          price: 0,
+          imageUrl: "/placeholder.jpg",
+          title: "Card",
+        });
+      } finally {
+        setLoading(false);
+      }
+    };
+    load();
+  }, [id]);
+
+  // Restore saved editor state
+  useEffect(() => {
+    const saved = sessionStorage.getItem(`template_state_${id}`);
+    const paid = sessionStorage.getItem(`paid_template_${id}`);
+    const auto = sessionStorage.getItem(`auto_export_${id}`);
+
+    if (saved) {
+      const s = JSON.parse(saved);
+      setTexts(s.texts || []);
+      setStickers(s.stickers || []);
+      setBackgroundColor(s.bg || "#fff");
+      setTextColor(s.textColor || "#ffd700");
+      setFontSize(s.fontSize || 48);
+    }
+
+    if (paid === "true") setIsPaid(true);
+
+    if (auto === "true") {
+      sessionStorage.removeItem(`auto_export_${id}`);
+      setTimeout(() => handleExport(), 300);
+    }
+  }, [id]);
+
+  const [templateImage] = useImage(template?.imageUrl || "", "anonymous");
+
+  const addText = () => setShowTextModal(true);
+
+  const handleAddCustomText = () => {
+    if (!customText.trim()) return;
+
+    const t = {
+      id: `text-${Date.now()}`,
+      text: customText,
+      x: 100,
+      y: 100,
+      fontSize,
+      fill: textColor,
+      fontFamily: "Dancing Script",
+      draggable: true,
+      shadowColor: "black",
+      shadowBlur: 8,
+      shadowOffset: { x: 4, y: 4 },
+      shadowOpacity: 0.7,
     };
 
-    // Add a sticker to the canvas
-    const addSticker = (src) => {
-        const newSticker = {
-            id: `sticker-${Date.now()}`,
-            src,
-            x: 200,
-            y: 200,
-            width: 100,
-            height: 100,
-            draggable: true,
-            shadowColor: "black",
-            shadowBlur: 20,
-            shadowOffset: { x: 10, y: 10 },
-            shadowOpacity: 0.8,
-        };
-        setStickers(prev => [...prev, newSticker]);
-        setSelectedId(newSticker.id);
+    setTexts(prev => [...prev, t]);
+    setSelectedId(t.id);
+    setCustomText("");
+    setShowTextModal(false);
+  };
+
+  const addSticker = (src) => {
+    const s = {
+      id: `sticker-${Date.now()}`,
+      src,
+      x: 200,
+      y: 200,
+      width: 120,
+      height: 120,
+      draggable: true,
     };
+    setStickers(prev => [...prev, s]);
+    setSelectedId(s.id);
+  };
 
-    // Sticker render component
-    const StickerComponent = ({ sticker }) => {
-        const [image] = useImage(sticker.src, "anonymous");
-        return (
-            <KonvaImage
-                image={image}
-                x={sticker.x}
-                y={sticker.y}
-                width={sticker.width}
-                height={sticker.height}
-                draggable
-                shadowColor={sticker.shadowColor}
-                shadowBlur={sticker.shadowBlur}
-                shadowOffset={sticker.shadowOffset}
-                shadowOpacity={sticker.shadowOpacity}
-                onClick={() => setSelectedId(sticker.id)}
-                onTap={() => setSelectedId(sticker.id)}
-                onDragEnd={(e) => {
-                    sticker.x = e.target.x();
-                    sticker.y = e.target.y();
-                }}
-                onTransformEnd={(e) => {
-                    const node = e.target;
-                    sticker.scaleX = node.scaleX();
-                    sticker.scaleY = node.scaleY();
-                    sticker.rotation = node.rotation();
-                    sticker.width = node.width() * node.scaleX();
-                    sticker.height = node.height() * node.scaleY();
-                }}
-            />
-        );
-    };
+  const exportCanvas = useCallback(async () => {
+    const node = stageRef.current?.container();
+    if (!node) return null;
 
-    // Export canvas as an image + upload to backend
-    const handleExport = async () => {
-        const node = stageRef.current?.container();
-        if (!node) return alert("Cannot export!");
+    const canvas = await html2canvas(node, {
+      scale: 2,
+      useCORS: true,
+      allowTaint: true,
+      backgroundColor: null,
+    });
 
-        try {
-            const canvas = await html2canvas(node, {
-                scale: 2,
-                useCORS: true,
-                allowTaint: true,
-                backgroundColor: null,
-            });
+    return canvas.toDataURL("image/jpeg", 0.95);
+  }, []);
 
-            canvas.toBlob(async (blob) => {
-                if (!blob) return;
+  const handleSaveFree = () => {
+    navigate(`/send/${id}`, {
+      state: { personalizedImage: null, freeMode: true },
+    });
+  };
 
-                const url = URL.createObjectURL(blob);
-                const a = document.createElement("a");
-                a.href = url;
-                a.download = `ecard-${id}-VIP.png`;
-                a.click();
-                URL.revokeObjectURL(url);
+  const handleExport = useCallback(async () => {
+    setProcessing(true);
 
-                const form = new FormData();
-                form.append("file", blob, `card-${id}.png`);
+    const jpg = await exportCanvas();
 
-                try {
-                    const res = await axios.post(`${API_URL}/upload/personalized`, form);
-                    navigate(`/send/${id}`, { state: { personalizedImage: res.data.url } });
-                } catch (err) {
-                    alert("Upload failed, but the file was still downloaded.");
-                }
-            }, "image/png");
-        } catch (err) {
-            console.error(err);
-            alert("Export error!");
-        }
-    };
+    if (jpg) {
+      sessionStorage.setItem(`edited_card_${id}`, jpg);
 
-    if (loading)
-        return (
-            <div className="text-center py-5">
-                <Spinner animation="border" variant="warning" size="lg" />
-            </div>
-        );
+      const a = document.createElement("a");
+      a.href = jpg;
+      a.download = `ecard-${id}.jpg`;
+      a.click();
+    }
 
-    if (!template) return <Alert variant="danger">Template does not exist</Alert>;
+    setProcessing(false);
 
-    const selectedNode = [...texts, ...stickers].find(item => item.id === selectedId);
+    navigate(`/send/${id}`, { state: { personalizedImage: jpg } });
+  }, [id, exportCanvas, navigate]);
 
-    return (
-        <Container fluid className="py-4 bg-dark text-light">
-            {/* Toolbar */}
-            <div className="bg-black p-3 rounded-4 shadow-lg mb-4">
-                <div className="d-flex flex-wrap gap-3 align-items-center justify-content-center">
-                    <Button variant="warning" onClick={addText} className="fw-bold">
-                        Add Text
-                    </Button>
+  const handlePayClick = async () => {
+    if (!template) return;
+    setProcessing(true);
 
-                    {/* Sticker selection dropdown */}
-                    <Dropdown>
-                        <Dropdown.Toggle variant="info" className="fw-bold">
-                            Add Sticker
-                        </Dropdown.Toggle>
-                        <Dropdown.Menu className="p-3">
-                            <div className="d-flex flex-wrap gap-2">
-                                {STICKERS.map((src, i) => (
-                                    <img
-                                        key={i}
-                                        src={src}
-                                        alt="sticker"
-                                        style={{ width: 60, height: 60, cursor: "pointer", borderRadius: 10 }}
-                                        onClick={() => addSticker(src)}
-                                    />
-                                ))}
-                            </div>
-                        </Dropdown.Menu>
-                    </Dropdown>
-
-                    {/* Color Picker for text */}
-                    <div className="position-relative d-inline-block">
-                        <span className="me-2 text-white">Text Color:</span>
-                        <div
-                            className="border border-3 border-white rounded d-inline-block shadow"
-                            style={{
-                                backgroundColor: textColor,
-                                width: 50,
-                                height: 40,
-                                cursor: "pointer",
-                                boxShadow: "0 0 10px rgba(255,215,0,0.6)"
-                            }}
-                            onClick={(e) => {
-                                e.stopPropagation();
-                                setShowColorPicker(prev => !prev);
-                            }}
-                        />
-
-                        {showColorPicker && (
-                            <>
-                                {/* Background overlay */}
-                                <div
-                                    className="position-fixed top-0 start-0 w-100 h-100"
-                                    style={{ background: "rgba(0,0,0,0.5)", zIndex: 9998 }}
-                                    onClick={() => setShowColorPicker(false)}
-                                />
-
-                                {/* Color Picker panel */}
-                                <div
-                                    className="position-absolute start-0 mt-2 shadow-lg rounded-4 overflow-hidden"
-                                    style={{ zIndex: 9999, background: "#1a1a1a" }}
-                                    onClick={(e) => e.stopPropagation()}
-                                >
-                                    <div className="p-3">
-                                        <HexColorPicker
-                                            color={textColor}
-                                            onChange={(newColor) => {
-                                                setTextColor(newColor);
-                                                if (selectedId && selectedNode?.id.includes("text")) {
-                                                    setTexts(prev =>
-                                                        prev.map(t =>
-                                                            t.id === selectedId ? { ...t, fill: newColor } : t
-                                                        )
-                                                    );
-                                                }
-                                            }}
-                                        />
-                                        <div className="text-center mt-3">
-                                            <Button size="sm" variant="outline-gold" onClick={() => setShowColorPicker(false)}>
-                                                Close
-                                            </Button>
-                                        </div>
-                                    </div>
-                                </div>
-                            </>
-                        )}
-                    </div>
-
-                    {/* Font size slider */}
-                    <Form.Range
-                        min="20"
-                        max="150"
-                        step="2"
-                        value={fontSize}
-                        onChange={(e) => {
-                            const newSize = Number(e.target.value);
-                            setFontSize(newSize);
-                            if (selectedId && selectedNode?.id.includes("text")) {
-                                setTexts(prev =>
-                                    prev.map(t =>
-                                        t.id === selectedId ? { ...t, fontSize: newSize } : t
-                                    )
-                                );
-                            }
-                        }}
-                        style={{ width: 180 }}
-                    />
-                    <span className="fw-bold ms-2">{fontSize}px</span>
-
-                    {/* Delete selected item */}
-                    <Button
-                        variant="danger"
-                        onClick={() =>
-                            selectedNode &&
-                            (selectedNode.id.includes("text")
-                                ? setTexts(texts.filter(t => t.id !== selectedId))
-                                : setStickers(stickers.filter(s => s.id !== selectedId)))
-                        }
-                    >
-                        Delete
-                    </Button>
-
-                    {/* Export */}
-                    <Button variant="success" size="lg" onClick={handleExport}>
-                        Save & Send
-                    </Button>
-                </div>
-            </div>
-
-            {/* Canvas Panel */}
-            <div className="d-flex justify-content-center">
-                <div className="bg-black rounded-4 overflow-hidden shadow-lg border border-warning border-3">
-                    <Stage width={800} height={600} ref={stageRef}>
-                        <Layer>
-                            {/* Background */}
-                            <Rect width={800} height={600} fill={backgroundColor} />
-
-                            {/* Template image */}
-                            {templateImage && (
-                                <KonvaImage image={templateImage} width={800} height={600} opacity={0.9} />
-                            )}
-
-                            {/* Stickers */}
-                            {stickers.map(sticker => (
-                                <StickerComponent key={sticker.id} sticker={sticker} />
-                            ))}
-
-                            {/* Text objects */}
-                            {texts.map(text => (
-                                <Text
-                                    key={text.id}
-                                    {...text}
-                                    onClick={() => setSelectedId(text.id)}
-                                    onTap={() => setSelectedId(text.id)}
-                                    onDragEnd={(e) => {
-                                        text.x = e.target.x();
-                                        text.y = e.target.y();
-                                    }}
-                                    onTransformEnd={(e) => {
-                                        const node = e.target;
-                                        text.scaleX = node.scaleX();
-                                        text.scaleY = node.scaleY();
-                                        text.rotation = node.rotation();
-                                    }}
-                                />
-                            ))}
-
-                            {/* Transformer for resizing/rotating selected element */}
-                            {selectedId && (
-                                <Transformer
-                                    attachedTo={stageRef.current?.findOne(`#${selectedId}`)}
-                                    boundBoxFunc={(oldBox, newBox) => (newBox.width < 20 ? oldBox : newBox)}
-                                />
-                            )}
-                        </Layer>
-                    </Stage>
-                </div>
-            </div>
-
-            {/* Back navigation */}
-            <div className="text-center mt-4">
-                <Button variant="outline-light" size="lg" onClick={() => navigate(-1)}>
-                    Back
-                </Button>
-            </div>
-        </Container>
+    sessionStorage.setItem(
+      `template_state_${id}`,
+      JSON.stringify({
+        texts,
+        stickers,
+        bg: backgroundColor,
+        textColor,
+        fontSize,
+      })
     );
+
+    try {
+      const res = await axios.post(`${API_URL}/paypal/pay?templateId=${template.id}`);
+      window.location.href = res.data.approval_url;
+    } catch {
+      alert("Payment failed");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  if (loading) return <div className="text-center py-5"><Spinner/></div>;
+  if (!template) return <Alert>Error loading template.</Alert>;
+
+  return (
+    <Container fluid className="py-4 bg-dark text-light">
+
+      {/* ADD TEXT MODAL */}
+      <Modal show={showTextModal} onHide={() => setShowTextModal(false)} centered>
+        <Modal.Header closeButton className="bg-dark text-light">
+          <Modal.Title>Add Text</Modal.Title>
+        </Modal.Header>
+        <Modal.Body className="bg-dark">
+          <Form.Control
+            className="bg-secondary text-light"
+            value={customText}
+            onChange={e => setCustomText(e.target.value)}
+          />
+        </Modal.Body>
+        <Modal.Footer>
+          <Button onClick={() => setShowTextModal(false)}>Cancel</Button>
+          <Button onClick={handleAddCustomText}>Add</Button>
+        </Modal.Footer>
+      </Modal>
+
+      {/* TOOLBAR */}
+      <div className="d-flex justify-content-center gap-3 mb-3">
+
+        <Button onClick={addText}>Add Text</Button>
+
+        {/* COLOR PICKER */}
+        <Button
+          variant="warning"
+          onClick={() => setShowColorPicker(!showColorPicker)}
+        >
+          Text Color
+        </Button>
+
+        {showColorPicker && (
+          <div
+            style={{
+              position: "absolute",
+              marginTop: 60,
+              zIndex: 10,
+              padding: 10,
+              background: "#222",
+              borderRadius: 10,
+            }}
+          >
+            <HexColorPicker
+              color={textColor}
+              onChange={color => {
+                setTextColor(color);
+                if (selectedId?.includes("text")) {
+                  setTexts(prev =>
+                    prev.map(t =>
+                      t.id === selectedId ? { ...t, fill: color } : t
+                    )
+                  );
+                }
+              }}
+            />
+          </div>
+        )}
+
+        {/* STICKERS */}
+        <Dropdown>
+          <Dropdown.Toggle>Add Sticker</Dropdown.Toggle>
+          <Dropdown.Menu className="p-2" style={{ maxHeight: 250, overflow: "auto" }}>
+            {STICKERS.map((s, i) => (
+              <img
+                key={i}
+                src={s}
+                style={{ width: 70, margin: 6, cursor: "pointer" }}
+                onClick={() => addSticker(s)}
+              />
+            ))}
+          </Dropdown.Menu>
+        </Dropdown>
+
+        {/* FONT SIZE */}
+        <Form.Range
+          min={20}
+          max={140}
+          value={fontSize}
+          onChange={(e) => {
+            const v = Number(e.target.value);
+            setFontSize(v);
+
+            if (selectedId?.includes("text")) {
+              setTexts(prev =>
+                prev.map(t =>
+                  t.id === selectedId ? { ...t, fontSize: v } : t
+                )
+              );
+            }
+          }}
+        />
+
+        {/* DELETE */}
+        <Button
+          variant="danger"
+          onClick={() => {
+            if (!selectedId) return;
+
+            if (selectedId.includes("text"))
+              setTexts(prev => prev.filter(t => t.id !== selectedId));
+            else
+              setStickers(prev => prev.filter(s => s.id !== selectedId));
+
+            setSelectedId(null);
+          }}
+        >
+          Delete
+        </Button>
+
+        {/* PAY / SAVE */}
+        {template.price > 0 && !isPaid ? (
+          <Button onClick={handlePayClick} disabled={processing}>
+            {processing ? "Processing..." : `Pay $${template.price}`}
+          </Button>
+        ) : template.price === 0 ? (
+          <Button onClick={handleSaveFree}>Save & Send</Button>
+        ) : (
+          <Button onClick={handleExport} disabled={processing}>
+            {processing ? "Exporting..." : "Save & Send"}
+          </Button>
+        )}
+      </div>
+
+      {/* CANVAS */}
+      <div className="d-flex justify-content-center">
+        <Stage width={800} height={600} ref={stageRef}>
+          <Layer>
+            <Rect width={800} height={600} fill={backgroundColor} />
+
+            {templateImage && (
+              <KonvaImage image={templateImage} width={800} height={600} />
+            )}
+
+            {stickers.map(s => {
+              const [img] = useImage(s.src);
+              return (
+                <KonvaImage
+                  key={s.id}
+                  image={img}
+                  {...s}
+                  onClick={() => setSelectedId(s.id)}
+                  draggable
+                />
+              );
+            })}
+
+            {texts.map(t => (
+              <Text
+                key={t.id}
+                {...t}
+                onClick={() => setSelectedId(t.id)}
+                draggable
+              />
+            ))}
+          </Layer>
+        </Stage>
+      </div>
+
+    </Container>
+  );
 }

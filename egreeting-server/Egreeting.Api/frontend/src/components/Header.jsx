@@ -2,6 +2,8 @@
 import { useState, useEffect } from "react";
 import { Navbar, Nav, Container, NavDropdown, Image, Spinner } from "react-bootstrap";
 import { Link, useLocation, useNavigate } from "react-router-dom";
+import { User } from "lucide-react";
+import { getStableAvatarSmall } from "../utils/avatar";
 import "../styles/header.css";
 
 export default function Header() {
@@ -10,18 +12,29 @@ export default function Header() {
   const [loading, setLoading] = useState(true);
   const [user, setUser] = useState(null);
   const [userLoading, setUserLoading] = useState(true);
+  const [avatarUrl, setAvatarUrl] = useState("");
 
   const location = useLocation();
   const navigate = useNavigate();
 
-  // Load user from localStorage
+  // Load user từ localStorage
   useEffect(() => {
     const token = localStorage.getItem("token");
     const userData = localStorage.getItem("user");
 
     if (token && userData) {
       try {
-        setUser(JSON.parse(userData));
+        const userObj = JSON.parse(userData);
+        setUser(userObj);
+        
+        // Ưu tiên dùng avatar đã lưu, nếu không có thì tạo mới
+        if (userObj.avatar) {
+          setAvatarUrl(userObj.avatar);
+        } else {
+          // Tạo avatar nhỏ với cùng logic
+          const avatar = getStableAvatarSmall(userObj);
+          setAvatarUrl(avatar);
+        }
       } catch (err) {
         console.error("Invalid user data in localStorage", err);
       }
@@ -34,12 +47,15 @@ export default function Header() {
   useEffect(() => {
     const fetchCategories = async () => {
       try {
-        const res = await fetch("http://localhost:5018/api/category");
+        const api = import.meta.env.VITE_API_URL;
+        const res = await fetch(`${api}/category`);
         const data = await res.json();
+
         const formatted = data.map(cat => ({
           name: cat.name,
           path: `/category/${cat.name}`,
         }));
+
         setCategories(formatted);
       } catch (err) {
         console.error("Fetch categories error:", err);
@@ -58,18 +74,30 @@ export default function Header() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Update user khi có thay đổi từ Profile
   useEffect(() => {
-  const updateUser = () => {
-    const stored = localStorage.getItem("user");
-    setUser(stored ? JSON.parse(stored) : null);
-  };
+    const updateUser = () => {
+      const stored = localStorage.getItem("user");
+      if (stored) {
+        const userObj = JSON.parse(stored);
+        setUser(userObj);
+        
+        // Luôn dùng avatar từ user object để đảm bảo đồng nhất
+        if (userObj.avatar) {
+          setAvatarUrl(userObj.avatar);
+        }
+      } else {
+        setUser(null);
+        setAvatarUrl("");
+      }
+    };
 
-  window.addEventListener("user-updated", updateUser);
+    window.addEventListener("user-updated", updateUser);
 
-  return () => {
-    window.removeEventListener("user-updated", updateUser);
-  };
-}, []);
+    return () => {
+      window.removeEventListener("user-updated", updateUser);
+    };
+  }, []);
 
   const isActive = path => location.pathname === path;
 
@@ -77,8 +105,9 @@ export default function Header() {
     localStorage.removeItem("token");
     localStorage.removeItem("user");
     setUser(null);
+    setAvatarUrl("");
     navigate("/login");
-    window.location.reload(); // ensures navbar updates instantly
+    window.location.reload();
   };
 
   return (
@@ -120,13 +149,20 @@ export default function Header() {
               )}
             </NavDropdown>
 
-            <Nav.Link
+            {/* <Nav.Link
               as={Link}
               to="/subscribe"
               className={`nav-link ${isActive("/subscribe") ? "active" : ""}`}
             >
               SUBSCRIBE
-            </Nav.Link>
+            </Nav.Link> */}
+            <Nav.Link
+              as={Link}
+              to="/packages"
+              className={`nav-link ${isActive("/packages") ? "active" : ""}`}
+            >
+              PACKAGES
+            </Nav.Link> 
             <Nav.Link
               as={Link}
               to="/feedback"
@@ -142,26 +178,36 @@ export default function Header() {
               <Spinner size="sm" className="text-amber-400" />
             ) : user ? (
               <NavDropdown
-                title={
-                  <div className="d-flex align-items-center gap-2">
-                    <Image
-                      src={user.avatar || "/avatar-placeholder.png"}
-                      roundedCircle
-                      width={36}
-                      height={36}
-                      className="border border-amber-400"
-                    />
-                    <span className="text-white fw-medium">
-                      Hello, {user.fullName}
-                    </span>
-                  </div>
-                }
-                align="end"
-              >
+  title={
+    <div className="d-flex align-items-center gap-1">
+      {avatarUrl ? (
+        <Image
+          src={avatarUrl}
+          roundedCircle
+          width={36}
+          height={36}
+          className="border border-amber-400"
+          style={{ objectFit: 'cover' }}
+        />
+      ) : (
+        <div
+          className="rounded-circle border border-amber-400 d-flex align-items-center justify-content-center bg-dark"
+          style={{ width: "36px", height: "36px" }}
+        >
+          <User size={18} className="text-amber-400" />
+        </div>
+      )}
+      <span className="text-white fw-medium">Hello, {user.fullName || 'User'}</span>
+      {/* Mũi tên tự tạo */}
+      <span className="text-white ms-1" style={{ fontSize: '0.75rem' }}>▼</span>
+    </div>
+  }
+  align="end"
+>
                 <NavDropdown.Item as={Link} to="/profile">
                   Profile
                 </NavDropdown.Item>
-                <NavDropdown.Item as={Link} to="/my-subscriptions">
+                <NavDropdown.Item as={Link} to="/my-subscription">
                   My Subscriptions
                 </NavDropdown.Item>
                 <NavDropdown.Divider />

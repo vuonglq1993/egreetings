@@ -28,7 +28,8 @@ export default function Search() {
         setError(null);
 
         const res = await fetch(
-          `${import.meta.env.VITE_API_URL}/template/search?q=${encodeURIComponent(query)}&pageNumber=${page}&pageSize=${PAGE_SIZE}`
+          `${import.meta.env.VITE_API_URL}/template/search?search=${encodeURIComponent(query)}&pageNumber=${page}&pageSize=${PAGE_SIZE}`
+
         );
 
         if (!res.ok) {
